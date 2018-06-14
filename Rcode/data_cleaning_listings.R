@@ -1,14 +1,60 @@
+#df <- data.frame(x = c(NA, "a.b", "a.d", "b.c"))
+df %>% separate(x, c("A", "B"))
+
+# If every row doesn't split into the same number of pieces, use
+# the extra and fill arguments to control what happens
+df <- data.frame(x = c("a", "a b", "a b c", NA))
+df %>% separate(x, c("a", "b"))
+# The same behaviour but no warnings
+df %>% separate(x, c("a", "b"), extra = "drop", fill = "right")
+# Another option:
+df %>% separate(x, c("a", "b"), extra = "merge", fill = "left")
+
+# If only want to split specified number of times use extra = "merge"
+df <- data.frame(x = c("x: 123", "y: error: 7"))
+df %>% separate(x, c("bedroom", "value"), ": ", extra = "merge")
+
+#
+
+
 library(tidyverse)
-result <- read.csv(file="/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/rental_crawlers/result.csv",header=T,stringsAsFactors = FALSE)
-#Need to set it for everyone to be able to subtract the datset after.
+
+s<-getwd()
+substr(s, 1, nchar(s)-5)
+datapath<-paste(substr(s, 1, nchar(s)-5),"rental_crawlers/raw_listing.csv",sep = "")
+result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
+#If you cannot load the raw dataset, you need to set it by yourself.
+
+result %>% 
+  separate(housing_type,c("bedroom","feet"),"-")
+
+#Arrangnig the dataset by title.
+result<- result %>% 
+  arrange(desc(is.na(title)))
+
 result$ID <- seq.int(nrow(result))
 #Adding index cuz the rowname is not functioning very well.
 
+#Let's delete the exact duplicates from the same name "or" the same description
+result<- result %>% 
+  filter(!duplicated(title)&!duplicated(description))
+!duplicated(result$title)
+result1 <- result %>% 
+  filter(!duplicated(lat)&!duplicated(long))
+#But there still is some duplicates; pretty similiar description and different title.
+#One way of finding it is to compare the lat and long, and for that let's check the false 
+str(result$title)
+result[321,]==result[322,]
+result$title[40]==result$title[41]
+result$description[321]==result$description[322]
+all.equal.character(result$description[321],result$description[322])
+all.equal(result$description[321],result$description[322])
+almost.equal(result$description[321],result$description[322])#Could not find fuction.
 #Let's make a function for the data spliting.
 a.regional.data <- function(name){
   
-  surrey_location_list <- gregexpr(pattern=name, result$Location)
-  surrey_title_list <- gregexpr(pattern=name, result$Title)
+  surrey_location_list <- gregexpr(pattern=name, result$location)
+  surrey_title_list <- gregexpr(pattern=name, result$title)
   index_surrey <- c()
   index_surrey_title <- c()
   for (i in 1:nrow(result)) {
@@ -69,9 +115,9 @@ classifier <- function(vector1,vector2)
 
 
 #Surrey
-surrey.region <- c("halley","uildford","leetwood", "ewton","loverdale","urrey","ity centre")
+surrey.region <- c("halley","uildford","leetwood","estminster", "ewton","loverdale","urrey","ity centre")
 
-non.surrey.region <- c("hite rock","ission","CLAYTON","layton","estminster","sawwassen","elta","lassic")
+non.surrey.region <- c("hite rock","ission","sawwassen","elta")
 # non.surrey.data<- subset.data(non.surrey.region)
 
 test <- classifier(surrey.region, non.surrey.region)
