@@ -1,10 +1,6 @@
 library(tidyverse)
-s<-getwd()
-substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"rental_crawlers/raw.csv",sep = "")
-result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
-#If you cannot load the raw dataset, you need to set it by yourself.
-
+result <- read.csv(file="/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/rental_crawlers/result.csv",header=T,stringsAsFactors = FALSE)
+#Need to set it for everyone to be able to subtract the datset after.
 result$ID <- seq.int(nrow(result))
 #Adding index cuz the rowname is not functioning very well.
 
@@ -73,9 +69,9 @@ classifier <- function(vector1,vector2)
 
 
 #Surrey
-surrey.region <- c("halley","uildford","leetwood","estminster", "ewton","loverdale","urrey","ity centre")
+surrey.region <- c("halley","uildford","leetwood", "ewton","loverdale","urrey","ity centre")
 
-non.surrey.region <- c("hite rock","ission","sawwassen","elta")
+non.surrey.region <- c("hite rock","ission","CLAYTON","layton","estminster","sawwassen","elta","lassic")
 # non.surrey.data<- subset.data(non.surrey.region)
 
 test <- classifier(surrey.region, non.surrey.region)

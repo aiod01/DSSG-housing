@@ -25,7 +25,7 @@ a.regional.data <- function(name){
   index <- index[!duplicated(index)]
   return(result[index,])
 }
-# a.regional.data function!
+# a.regional.data function! It will extract a dataset which contain a certain word in Location or Title column
 
 
 #This is to let the function deal with a vector with multiple region names.
