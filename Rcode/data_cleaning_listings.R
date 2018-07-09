@@ -1,124 +1,254 @@
-#df <- data.frame(x = c(NA, "a.b", "a.d", "b.c"))
-df %>% separate(x, c("A", "B"))
+install.packages("stringdist")
+install.packages("PASWR")
+library (MASS)
+library(dplyr)
+library("stringdist")
+library("PASWR")
 
-# If every row doesn't split into the same number of pieces, use
-# the extra and fill arguments to control what happens
-df <- data.frame(x = c("a", "a b", "a b c", NA))
-df %>% separate(x, c("a", "b"))
-# The same behaviour but no warnings
-df %>% separate(x, c("a", "b"), extra = "drop", fill = "right")
-# Another option:
-df %>% separate(x, c("a", "b"), extra = "merge", fill = "left")
-
-# If only want to split specified number of times use extra = "merge"
-df <- data.frame(x = c("x: 123", "y: error: 7"))
-df %>% separate(x, c("bedroom", "value"), ": ", extra = "merge")
-
-#
-
-
-library(tidyverse)
-
+#Load data set
 s<-getwd()
 substr(s, 1, nchar(s)-5)
 datapath<-paste(substr(s, 1, nchar(s)-5),"rental_crawlers/raw_listing.csv",sep = "")
+#If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
-#If you cannot load the raw dataset, you need to set it by yourself.
-
-result %>% 
-  separate(housing_type,c("bedroom","feet"),"-")
 
 #Arrangnig the dataset by title.
 result<- result %>% 
-  arrange(desc(is.na(title)))
+  arrange(description)
 
-result$ID <- seq.int(nrow(result))
 #Adding index cuz the rowname is not functioning very well.
+result$ID <- seq.int(nrow(result))
+
+result <- result %>% 
+  mutate(gcs=paste(lat,long))
+
+#There is no missing values for titles, nor description
+#But there are some empty title and description, so I am deleting empty titles.
+result <- result[!(result$title==""),]
+
+#CSV file of empty title entry for Jocelyn. 
+# empty.title <- result[(result$title==""),]
+# write.csv(empty.title, file = "emptytitle.csv", append = FALSE, quote = TRUE, sep = " ",
+#             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
+#             col.names = TRUE, qmethod = c("escape", "double"),
+#             fileEncoding = "")
 
 #Let's delete the exact duplicates from the same name "or" the same description
-result<- result %>% 
-  filter(!duplicated(title)&!duplicated(description))
-!duplicated(result$title)
-result1 <- result %>% 
-  filter(!duplicated(lat)&!duplicated(long))
-#But there still is some duplicates; pretty similiar description and different title.
-#One way of finding it is to compare the lat and long, and for that let's check the false 
-str(result$title)
-result[321,]==result[322,]
-result$title[40]==result$title[41]
-result$description[321]==result$description[322]
-all.equal.character(result$description[321],result$description[322])
-all.equal(result$description[321],result$description[322])
-almost.equal(result$description[321],result$description[322])#Could not find fuction.
-#Let's make a function for the data spliting.
-a.regional.data <- function(name){
-  
-  surrey_location_list <- gregexpr(pattern=name, result$location)
-  surrey_title_list <- gregexpr(pattern=name, result$title)
-  index_surrey <- c()
-  index_surrey_title <- c()
-  for (i in 1:nrow(result)) {
-    if(surrey_location_list[[i]][1]!=-1)
-    {index_surrey <- c(index_surrey,i)}
-    if(surrey_title_list[[i]][1]!=-1)
-    {index_surrey_title <- c(index_surrey_title,i)}
+dif.ttl.or.dif.des<- result %>% 
+  filter(!duplicated(title)|!duplicated(description)) %>% 
+  arrange(lat,long)%>% 
+  select(lat, long, title, description,date:ID)
+
+#same title
+same.title <- result %>% 
+  filter(duplicated(title))
+
+#same desc
+same.desc <- result %>% 
+  filter(duplicated(description))
+
+#same title and different description
+same.ttl.diff.desc <- same.title %>% 
+  filter(!(ID%in%same.desc$ID)) %>% 
+  select(lat, long, title, description,date:ID)
+
+#Let A subset that has different title,
+#Let B subset that has different description,
+#Let c subset that has different location.
+#Let's make subset B-A-C:same location with same title, different description
+#and name it as temp.
+
+temp <- temp[!is.na(temp$lat),]
+temp <- temp[!is.na(temp$long),]
+
+#B-(A∪C)
+same.ttl.diff.desc.same.gcs <- temp %>% 
+  filter(duplicated(gcs))
+
+
+#Excluding B-(A∪C)
+#same location with same title, different description is excluded.
+excl.same.ttl.same.loc.dif.des <- dif.ttl.or.dif.des %>% 
+  filter(!(ID%in%same.ttl.diff.desc.same.gcs$ID)) %>% 
+  arrange(lat,long)%>%
+  select(lat, long, title, description,date:ID)
+
+
+same.desc.diff.ttl <- same.desc %>% 
+  filter(!(ID%in%same.title$ID))%>% 
+  select(lat, long, description,date:ID) %>% 
+  arrange(description) 
+
+#So many ,,,, description makes it confused, so will delete them.
+desc.temp <- gsub(","," ",same.desc.diff.ttl$description)
+desc.temp <- gsub("\n"," ",same.desc.diff.ttl$description)
+same.desc.diff.ttl<- same.desc.diff.ttl[grep("\\b \\b", desc.temp),] %>% 
+  arrange(lat)
+
+
+#So anyway,if [i,j]value exceeds 400, I will remove it. 
+#If i>j, [i,j]and [j,i] will have the same value. I will delete the second one, which means i.
+dup.candidates <- c()
+for (i in 1:(nrow(edit.matrix)-1)) {
+  for (j in (i+1):nrow(edit.matrix)) {
+    if (edit.matrix[i,j]<200) {
+      dup.candidates <- c(dup.candidates,j)
+    }
   }
-  index <- c(index_surrey,index_surrey_title)
-  index <- index[!duplicated(index)]
-  return(result[index,])
 }
-# a.regional.data function!
+
+dup.candidates <- dup.candidates[!duplicated(dup.candidates)]
 
 
-#This is to let the function deal with a vector with multiple region names.
-subset.data <- function(x) {
-  l.result<- lapply(x, a.regional.data)
-  temp1 <- l.result[[1]]
-  for (i in 1:(length(l.result)-1)) {
-    temp1 <- rbind(temp1,l.result[[i+1]])
-    
+
+#########For duplicates only
+set.seed(1)
+##let's sample 100 observations from the A union B.
+sampled.index <- sample(1:nrow(dif.ttl.or.dif.des), 100, replace = FALSE)
+##
+sampled.data <- dif.ttl.or.dif.des %>% 
+  filter(as.numeric(rownames(dif.ttl.or.dif.des))%in%sampled.index) %>% 
+  arrange(title)
+
+#ID first, removing "" next result goes to the dataset, and we got the matrix.
+dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
+sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
+rownames(sample.edit.matrix) <- sampled.data$ID
+colnames(sample.edit.matrix) <- sampled.data$ID
+for (i in 1:(nrow(sampled.data)-1)) {
+  for (j in (i+1):nrow(sampled.data)) {
+    first.id <- sampled.data$ID[i]
+    second.id <- sampled.data$ID[j]
+    matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
+    matrix.index <- as.numeric(matrix.index$rowname)
+    edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
+    sample.edit.matrix[i,j] <- edit.value
+    }
   }
-  regional.data <- unique(temp1)
-  regional.data <- regional.data %>% arrange(ID)
-  return(regional.data)
+sample.edit.vector <- as.vector(sample.edit.matrix)
+his.nondup <- hist(sample.edit.vector)
+###########
+
+#########So I am comparing the difference of the distributions of two subset.
+set.seed(1)
+sampled.index <- sample(1:nrow(same.ttl.diff.desc), 100, replace = FALSE)
+
+sampled.data <- same.ttl.diff.desc %>% 
+  filter(as.numeric(rownames(same.ttl.diff.desc))%in%sampled.index) %>% 
+  arrange(title)
+
+#ID first, removing "" next result goes to the dataset, and we got the matrix.
+dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
+sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
+rownames(sample.edit.matrix) <- sampled.data$ID
+colnames(sample.edit.matrix) <- sampled.data$ID
+for (i in 1:(nrow(sampled.data)-1)) {
+  for (j in (i+1):nrow(sampled.data)) {
+    first.id <- sampled.data$ID[i]
+    second.id <- sampled.data$ID[j]
+    matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
+    matrix.index <- as.numeric(matrix.index$rowname)
+    edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
+    sample.edit.matrix[i,j] <- edit.value
+  }
 }
-#So we can put more than one regions as arguments of the function.
+sample.edit.vector.dup <- as.vector(sample.edit.matrix)
+his.du <- hist(sample.edit.vector.dup)
+hist(sample.edit.vector.dup)
+hist(sample.edit.vector)
+View(his.nondup)
+###########
 
-#Btw, I can pick all of the dataset which contains non surrey regions by doing the same logical things.
-#And then there must be an intersect. I will set a intersect dataset, data set A(only surrey), data set B(only nonsurrey),
-#and finally a dataset which is not including any of the previous data sets.
-
-#So let's make that as a function.
-classifier <- function(vector1,vector2)
-{
-  x <- list()
-  #surrey region subset
-  dt1<- subset.data(vector1)
-  #non surrey region subset
-  dt2 <- subset.data(vector2)
-  #intersection subset
-  duplicate.index <- dt2$ID
-  confusing.data <- dt1 %>% 
-      filter(ID %in% duplicate.index)
-  #complementary subset
-  index1 <- dt1$ID
-  index2 <- dt2$ID
-  complementary.index <- result$ID[-sort(combine(index1, index2))[!duplicated(sort(combine(index1, index2)))]]
-  complementary.data <- result[complementary.index,]
-  #print(deparse(substitute(vector1))) When you debuging, run inside of a mold, line by line, print things on each step.
-  x[[deparse(substitute(vector1))]]=dt1 # Thanks to Xiaomeng. Convert a name of a variable to a character(string)
-  x[[deparse(substitute(vector2))]]=dt2
-  x[["complementary.data"]] = complementary.data
-  x[["confusing.data"]] = confusing.data
-  return(x)
-}
+a <- as.vector(edit.matrix)
+hist(a)
 
 
-#Surrey
-surrey.region <- c("halley","uildford","leetwood","estminster", "ewton","loverdale","urrey","ity centre")
 
-non.surrey.region <- c("hite rock","ission","sawwassen","elta")
-# non.surrey.data<- subset.data(non.surrey.region)
+combn(letters[1:4], 2)
+(m <- combn(10, 5, min))   # minimum value in each combination
+mm <- combn(15, 6, function(x) matrix(x, 2, 3))
+stopifnot(round(choose(10, 5)) == length(m),
+          c(2,3, round(choose(15, 6))) == dim(mm))
+a <- combn(1:100,2)
+a <- as.matrix(a)
+##
+#######housing type -> rooms sqft
+a <- dif.ttl.or.dif.des
+a$housing_type <- gsub("/","",dif.ttl.or.dif.des$housing_type)
 
-test <- classifier(surrey.region, non.surrey.region)
+
+private_index <- grep("\\bprivate room\\b", a$housing_type)
+a$rooms <- NA
+a <- a %>% 
+  filter(!row.names(a)%in%private_index) %>% 
+  mutate(rooms=substr(a$housing_type,1,4))
+substr(a$housing_type,1,4)
+#######
+##
+
+
+# excl.same.desc.same.loc.dif.ttl<- excl.same.ttl.same.loc.dif.des%>%
+#   filter(!ID%in%temp.2$ID) %>% 
+#   arrange(ID)
+# 
+# a <- excl.same.desc.same.loc.dif.ttl
+# 
+# a <- a[!is.na(a$lat),] 
+# a <- a[!is.na(a$price),]
+# a <- a[!is.na(a$location),]
+# a <- a %>% 
+#   filter(duplicated(lat)&duplicated(long)&duplicated(location)&duplicated(price))
+# x <- c(1,2,3,NA,4)
+# is.na(x)
+# na.omit(x)
+
+
+# arranged.result <- result %>% 
+#   arrange(title)
+# 
+# arranged.title=data.frame(arranged.result$title)
+# names(arranged.title)[names(arranged.title)=="arranged.result.title"]="title1"
+# arranged.title$title1=as.character(arranged.title$title1)
+# arranged.title$title2 <- ""
+# 
+# 
+# start.time <- Sys.time()
+# for (i in (nrow(arranged.title)-1)) {
+#     x <- agrep(arranged.title$title1[i],arranged.title$title1[-(1:i)],ignore.case=TRUE, value=TRUE)
+#     x <- paste0(x,"")
+#     arranged.title$title2[i] <- x
+#     }
+#How am I gonna get the exact distance ? two output theshold and disatnce. 
+#simluation for minimizing 
+#prob model CV. prob matching messey data 
+# end.time <- Sys.time()
+# time.taken <- end.time - start.time
+# time.taken
+# 
+# sum(is.na(arranged.title$title2))
+
+
+# c <- stringdistmatrix(temp$description,temp$description)
+# candidates <- c()
+# for (i in 1:(nrow(temp)-1)) {
+#   for (j in (i+1):nrow(temp)) {
+#     if (c[i,j]<200) {
+#       candidates <- c(candidates,j)
+#     }
+#   }
+# }
+# candidates <- candidates[!duplicated(candidates)]
+# # for (i in (nrow(arranged.title)-1)) {
+# #   x <- agrep(arranged.title$title1[i],arranged.title$title1[-(1:i)],ignore.case=TRUE, value=TRUE)
+# #   x <- paste0(x,"")
+# #   arranged.title$title2[i] <- x
+# # }
+# 
+# 
+# 
+# start.time <- Sys.time()
+# b <- stringdistmatrix(dif.ttl.or.dif.des$description,dif.ttl.or.dif.des$description)
+# end.time <- Sys.time()
+# time.taken <- end.time - start.time
+# time.taken
 

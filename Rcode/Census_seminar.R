@@ -1,0 +1,7 @@
+install.packages("devtools")
+devtools::install_github("mountainmath/cansim")
+library(cansim)
+install.packages("cancensus")
+library(cancensus)
+list_cansim_tables()
+#install.packages("cmhc")
