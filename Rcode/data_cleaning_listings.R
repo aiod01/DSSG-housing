@@ -172,19 +172,7 @@ stopifnot(round(choose(10, 5)) == length(m),
 a <- combn(1:100,2)
 a <- as.matrix(a)
 ##
-#######housing type -> rooms sqft
-a <- dif.ttl.or.dif.des
-a$housing_type <- gsub("/","",dif.ttl.or.dif.des$housing_type)
 
-
-private_index <- grep("\\bprivate room\\b", a$housing_type)
-a$rooms <- NA
-a <- a %>% 
-  filter(!row.names(a)%in%private_index) %>% 
-  mutate(rooms=substr(a$housing_type,1,4))
-substr(a$housing_type,1,4)
-#######
-##
 
 
 # excl.same.desc.same.loc.dif.ttl<- excl.same.ttl.same.loc.dif.des%>%
