@@ -45,13 +45,11 @@ result <- result[!(result$title==""),]
 #Let's delete the exact duplicates from the same name "or" the same description
 dif.ttl.or.dif.des<- result %>% 
   filter(!duplicated(title)|!duplicated(description)) %>% 
-  arrange(lat,long)%>% 
-  select(lat, long, title, description,date:ID)
+  arrange(lat,long)
 
 dif.ttl.and.dif.des<- result %>% 
   filter(!duplicated(title)&!duplicated(description)) %>% 
-  arrange(lat,long)%>% 
-  select(lat, long, title, description,date:ID)
+  arrange(lat,long)
 
 
 #same title
@@ -64,46 +62,52 @@ same.desc <- result %>%
 
 #same title and different description
 same.ttl.diff.desc <- same.title %>% 
-  filter(!(ID%in%same.desc$ID)) %>% 
-  select(lat, long, title, description,date:ID)
+  filter(!(ID%in%same.desc$ID))
 
 #Let A subset that has different title,
 #Let B subset that has different description,
 #Let c subset that has different location.
 
 #Let's make subset B-A-C:same location with same title, different description
-#and name it as temp.
+#and name it as temp:same title, dif desc, same location
 
-
+temp <- same.ttl.diff.desc %>% 
+  filter(duplicated(gcs))
 
 
 temp <- temp[!is.na(temp$lat),]
 temp <- temp[!is.na(temp$long),]
 
-#B-(A∪C)
-same.ttl.diff.desc.same.gcs <- temp %>% 
-  filter(duplicated(gcs))
+#B-(A∪C): temp
+
 
 
 #Excluding B-(A∪C)
 #same location with same title, different description is excluded.
 excl.same.ttl.same.loc.dif.des <- dif.ttl.or.dif.des %>% 
-  filter(!(ID%in%same.ttl.diff.desc.same.gcs$ID)) %>% 
-  arrange(lat,long)%>%
-  select(lat, long, title, description,date:ID)
+  filter(!(ID%in%temp$ID)) %>% 
+  arrange(lat,long)
 
 
 same.desc.diff.ttl <- same.desc %>% 
-  filter(!(ID%in%same.title$ID))%>% 
-  select(lat, long, description,date:ID) %>% 
+  filter(!(ID%in%same.title$ID)) %>% 
   arrange(description) 
+
+
 
 #So many ,,,, description makes it confused, so will delete them.
 desc.temp <- gsub(","," ",same.desc.diff.ttl$description)
 desc.temp <- gsub("\n"," ",same.desc.diff.ttl$description)
-same.desc.diff.ttl<- same.desc.diff.ttl[grep("\\b \\b", desc.temp),] %>% 
-  arrange(lat)
+same.desc.diff.ttl<- same.desc.diff.ttl[grep("\\b \\b", desc.temp),] %>% arrange(lat)
 
+#Let's remove this part.
+same.desc.diff.ttl.same.loc <- same.desc.diff.ttl %>% filter(duplicated(gcs))
+
+#it's removing data with two variables having same values.
+excl.same.desc.same.loc.dif.ttl <-  excl.same.ttl.same.loc.dif.des%>% 
+  filter(!(ID%in%same.desc.diff.ttl.same.loc$ID))
+
+#So we have excl.same.desc.same.loc.dif.ttl data frame!
 
 #So anyway,if [i,j]value exceeds 400, I will remove it. 
 #If i>j, [i,j]and [j,i] will have the same value. I will delete the second one, which means i.
