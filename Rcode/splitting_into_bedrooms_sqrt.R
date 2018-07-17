@@ -2,7 +2,7 @@ library(dplyr)
 #Load data set
 s<-getwd()
 substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"rental_crawlers/raw_listing.csv",sep = "")
+datapath<-paste(substr(s, 1, nchar(s)-5),"results/listings-2018-06.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
 
@@ -15,7 +15,7 @@ private_index <- grep("\\bprivate room\\b", result$housing_type)
 result$sqrt<- result$rooms <- NA
 
 
-
+#the dataframe b is for data without the world "private room"
 b <- result %>% 
   filter(!as.numeric(row.names(result))%in%private_index) %>% 
   select(ID,housing_type,rooms,sqrt)
@@ -29,7 +29,7 @@ b.rooms$rooms <- gsub("b","",b.rooms$rooms)
 b.rooms$sqrt <- gsub("f","",b.rooms$sqrt)
 b.rooms$sqrt <- gsub("t","",b.rooms$sqrt)
 b.rooms <- b.rooms %>% 
-  select(ID,rooms,sqrt)
+  select(ID,rooms,sqrt,housing_type)
 
 ft.only.index.b <- which(!1:nrow(b)%in%br.index.b)
 
@@ -39,7 +39,7 @@ b.sqrt <- b[ft.only.index.b,] %>%
 b.sqrt$sqrt <- gsub("f","",b.sqrt$sqrt)
 b.sqrt$sqrt <- gsub("t","",b.sqrt$sqrt)
 b.sqrt <- b.sqrt %>% 
-  select(ID,rooms,sqrt)
+  select(ID,rooms,sqrt,housing_type)
 
 #######
 c <- result %>% 
