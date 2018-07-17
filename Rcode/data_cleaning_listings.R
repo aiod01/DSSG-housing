@@ -1,9 +1,17 @@
 install.packages("stringdist")
 install.packages("PASWR")
+install.packages("DescTools")
+library(DescTools)
 library (MASS)
 library(dplyr)
 library("stringdist")
 library("PASWR")
+
+x <- "I have a pen"
+y <- "I have an appen"
+StrDist(x, y, method = "normlevenshtein", mismatch = 1, gap = 1, ignore.case = FALSE)
+
+
 
 #Load data set
 s<-getwd()
