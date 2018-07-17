@@ -9,12 +9,14 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 from scipy.spatial.distance import squareform, pdist
-
+import os
+cwd=os.getcwd()
 #How to import my June matrix?
 
-result=pd.read_csv('/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/Rcode/2018-06-splitted.csv',encoding='latin-1')
-#result=pd.read_csv('2018-06-splitted.csv',encoding='latin-1')
+file='/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/deDuplicated_OnID_20180713.csv'
+result=pd.read_csv(file,encoding='latin-1')
 
-geo_matrix=pd.DataFrame(squareform(pdist(result.iloc[:,[7,9]])), columns=result.ID.unique(), index=result.ID.unique())
+
+geo_matrix=pd.DataFrame(squareform(pdist(result.iloc[:,['latitude','longitude']])), columns=result.ID.unique(), index=result.ID.unique())
 
 
