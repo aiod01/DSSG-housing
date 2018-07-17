@@ -1,3 +1,4 @@
+if (!require(tidyverse)) install.packages("tidyverse")
 library("tidyverse")
 
 
@@ -91,3 +92,9 @@ non.surrey.region <- c("hite rock","ission","sawwassen","elta")
 
 test <- classifier(surrey.region, non.surrey.region)
 
+surrey.region.data <- rbind(test[[1]],test[[3]],test[[4]])
+non.surrey.region.data <- test[[2]]
+
+
+filename<-paste(substr(s, 1, nchar(s)-5),"results/surrey_region_R.csv",sep = "")
+write.csv(surrey.region.data,file=filename)
