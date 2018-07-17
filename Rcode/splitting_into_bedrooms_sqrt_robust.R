@@ -116,7 +116,13 @@ result$sqrt <- gsub("NA","",result$sqrt)
 result <- result %>% 
   select(-rooms.x,-rooms.y,-sqrt.x,-sqrt.y)
 
-write.csv(result, file = "2018-06-splitted.csv", append = FALSE, quote = TRUE, sep = ",",
+write.csv(result, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/data_cleaning/_DeDuplication_On_IDs/2018-06-splitted.csv", append = FALSE, quote = TRUE, sep = ",",
             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
             col.names = TRUE, qmethod = c("escape", "double"),
             fileEncoding = "")
+
+write.csv(result, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/2018-06-splitted.csv", append = FALSE, quote = TRUE, sep = ",",
+          eol = "\n", na = "NA", dec = ".", row.names = TRUE,
+          col.names = TRUE, qmethod = c("escape", "double"),
+          fileEncoding = "")
+
