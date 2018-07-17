@@ -1,22 +1,17 @@
-install.packages("stringdist")
-install.packages("PASWR")
-
-
-install.packages("DescTools")
+if (!require(stringdist)) install.packages("stringdist")
+if (!require(PASWR)) install.packages("PASWR")
+if (!require(DescTools)) install.packages("DescTools")
 library(DescTools)
-
 library (MASS)
 library(dplyr)
-library("stringdist")
-library("PASWR")
+library(stringdist)
+library(PASWR)
 
 
 
-x <- "I have a pen"
-y <- "I have an appen"
-StrDist(x, y, method = "normlevenshtein", mismatch = 1, gap = 1, ignore.case = FALSE)
-
-
+# x <- "I have a pen"
+# y <- "I have an appen"
+# StrDist(x, y, method = "normlevenshtein", mismatch = 1, gap = 1, ignore.case = FALSE)
 
 
 #Load data set
@@ -53,6 +48,12 @@ dif.ttl.or.dif.des<- result %>%
   arrange(lat,long)%>% 
   select(lat, long, title, description,date:ID)
 
+dif.ttl.and.dif.des<- result %>% 
+  filter(!duplicated(title)&!duplicated(description)) %>% 
+  arrange(lat,long)%>% 
+  select(lat, long, title, description,date:ID)
+
+
 #same title
 same.title <- result %>% 
   filter(duplicated(title))
@@ -69,8 +70,12 @@ same.ttl.diff.desc <- same.title %>%
 #Let A subset that has different title,
 #Let B subset that has different description,
 #Let c subset that has different location.
+
 #Let's make subset B-A-C:same location with same title, different description
 #and name it as temp.
+
+
+
 
 temp <- temp[!is.na(temp$lat),]
 temp <- temp[!is.na(temp$long),]
@@ -186,9 +191,7 @@ stopifnot(round(choose(10, 5)) == length(m),
 a <- combn(1:100,2)
 a <- as.matrix(a)
 ##
-<<<<<<< HEAD
 
-=======
 #######housing type -> rooms sqft
 a <- dif.ttl.or.dif.des
 a$housing_type <- gsub("/","",dif.ttl.or.dif.des$housing_type)
@@ -202,7 +205,7 @@ a <- a %>%
 substr(a$housing_type,1,4)
 #######
 ##
->>>>>>> June
+
 
 
 # excl.same.desc.same.loc.dif.ttl<- excl.same.ttl.same.loc.dif.des%>%
