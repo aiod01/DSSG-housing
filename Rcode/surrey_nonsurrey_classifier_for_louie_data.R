@@ -24,13 +24,11 @@ result <- result[!(result$title==""),]
 #Let's make a function for the data spliting.
 a.regional.data <- function(name){
   
-  surrey_location_list <- gregexpr(pattern=name, result$location)
   surrey_title_list <- gregexpr(pattern=name, result$title)
-  index_surrey <- c()
+  
   index_surrey_title <- c()
   for (i in 1:nrow(result)) {
-    if(surrey_location_list[[i]][1]!=-1)
-    {index_surrey <- c(index_surrey,i)}
+    
     if(surrey_title_list[[i]][1]!=-1)
     {index_surrey_title <- c(index_surrey_title,i)}
   }
