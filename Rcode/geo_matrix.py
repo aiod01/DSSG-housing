@@ -27,12 +27,15 @@ geo_frame=pd.DataFrame(dist_matrix, columns=result.url.unique(), index=result.ur
 #under certain thresholds, I would like to pick the list of lists. 
 
 temp_set=set()
-threshold=1
+threshold=0.3
 for i in range(geo_frame.shape[0]-1):
     for j in range(i+1,geo_frame.shape[1]):
         if geo_frame.iloc[i,j] <= threshold:
-            temp_subset={result.url[i],result.url[j]}
-    temp_set=temp_subset|temp_set
-temp_set.add(temp_set)
+            temp_subset=set()
+            temp_subset.add(result.url[i])
+            temp_subset.add(result.url[j])#What's wrong with result.url[71]?
+        temp_set=temp_subset|temp_set
+    
+#temp_set.add(temp_set)
 
         
