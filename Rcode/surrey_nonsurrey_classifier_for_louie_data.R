@@ -5,7 +5,7 @@ library("tidyverse")
 #Load data set
 s<-getwd()
 substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"/data_cleaning/Standardization for Louie data/standardized_merged_cleaned_Louie.csv",sep = "")
+datapath<-paste(substr(s, 1, nchar(s)-5),"/results/Standardized_Deduped_Datasets/Louie_Clean_20180718.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
 
@@ -32,7 +32,7 @@ a.regional.data <- function(name){
     if(surrey_title_list[[i]][1]!=-1)
     {index_surrey_title <- c(index_surrey_title,i)}
   }
-  index <- c(index_surrey,index_surrey_title)
+  index <- c(index_surrey_title)
   index <- index[!duplicated(index)]
   return(result[index,])
 }
@@ -94,5 +94,5 @@ surrey.region.data <- rbind(test[[1]],test[[3]],test[[4]])
 non.surrey.region.data <- test[[2]]
 
 
-filename<-paste(substr(s, 1, nchar(s)-5),"results/surrey_region_R.csv",sep = "")
+filename<-paste(substr(s, 1, nchar(s)-5),"/results/Standardized_Deduped_Datasets/Louie_Clean_20180719.csv",sep = "")
 write.csv(surrey.region.data,file=filename)
