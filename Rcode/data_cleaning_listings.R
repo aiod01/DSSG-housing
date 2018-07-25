@@ -17,7 +17,7 @@ library(PASWR)
 #Load data set
 s<-getwd()
 substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"rental_crawlers/raw_listing.csv",sep = "")
+datapath<-paste(substr(s, 1, nchar(s)-5),"results/Standardized_Deduped_Datasets/Louie_Clean_20180719.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
 
