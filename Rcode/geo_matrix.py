@@ -76,9 +76,9 @@ geo_frame.loc['https://vancouver.craigslist.ca/van/apa/d/3-beds-35-baths-luxury/
 
 #we will pick only pairs of urls which is bigger than 0
 x_0007=list(geo_frame[geo_frame <= 0.00077705919980653457].stack().index)
-x_01=list(geo_frame[geo_frame <= 0.01].stack().index)
+x_04=list(geo_frame[geo_frame <= 0.04].stack().index)
 x_max=list(geo_frame[geo_frame <= 0.15484685105613388].stack().index)
-
+ 
 
 ######Below is my trial and faliure codes.... don't mind it.########
 #results = {}
