@@ -19,11 +19,12 @@ s<-getwd()
 substr(s, 1, nchar(s)-5)
 datapath<-paste(substr(s, 1, nchar(s)-5),"results/Standardized_Deduped_Datasets/June_Clean_20180719.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
-result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
+result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
 
 #Arrangnig the dataset by title.
 result<- result %>% 
-  arrange(description)
+  arrange(desc(date)) %>% 
+  select(-X.1,-X,-ID)
 
 #Adding index cuz the rowname is not functioning very well.
 result$ID <- seq.int(nrow(result))
@@ -35,17 +36,18 @@ result <- result %>%
 #But there are some empty title and description, so I am deleting empty titles.
 result <- result[!(result$title==""),]
 
-#CSV file of empty title entry for Jocelyn. 
-# empty.title <- result[(result$title==""),]
-# write.csv(empty.title, file = "emptytitle.csv", append = FALSE, quote = TRUE, sep = " ",
-#             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
-#             col.names = TRUE, qmethod = c("escape", "double"),
-#             fileEncoding = "")
+#So, for Kijiji, no desc. 
+result$source <- as.factor(result$source)
+str(result$source)
+result_craig <- result %>% filter(source=="Craigslist")
+result_kjj <- result %>% filter(source!="Craigslist")
+result_kjj$source <- result_kjj$source
+summary(result$source)# I will replace kijiji to Kijiji, and then start deduplication for that.
+
 
 #Let's delete the exact duplicates from the same name "or" the same description
 dif.ttl.or.dif.des<- result %>% 
-  filter(!duplicated(title)|!duplicated(description)) %>% 
-  arrange(lat,long)
+  filter(!duplicated(title)|!duplicated(description)) 
 
 dif.ttl.and.dif.des<- result %>% 
   filter(!duplicated(title)&!duplicated(description)) %>% 
@@ -54,16 +56,21 @@ dif.ttl.and.dif.des<- result %>%
 
 #same title
 same.title <- result %>% 
-  filter(duplicated(title))
+  filter(duplicated(title)) %>% arrange(title)
 
 #same desc
 same.desc <- result %>% 
-  filter(duplicated(description))
+  filter(duplicated(description)) %>% arrange(description)
+#So many NA values in desc due to kijiji data set. 
+same.desc <- same.desc[!is.na(same.desc$description),]
+
 
 #same title and different description
 same.ttl.diff.desc <- same.title %>% 
   filter(!(ID%in%same.desc$ID))
 
+same.ttl.same.desc <- same.title %>% 
+  filter((ID%in%same.desc$ID))
 #Let A subset that has different title,
 #Let B subset that has different description,
 #Let c subset that has different location.
@@ -146,8 +153,8 @@ for (i in 1:(nrow(sampled.data)-1)) {
     matrix.index <- as.numeric(matrix.index$rowname)
     edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
     sample.edit.matrix[i,j] <- edit.value
-    }
   }
+}
 sample.edit.vector <- as.vector(sample.edit.matrix)
 his.nondup <- hist(sample.edit.vector)
 ###########
