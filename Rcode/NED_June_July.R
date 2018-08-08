@@ -7,17 +7,10 @@ library(dplyr)
 library(stringdist)
 library(PASWR)
 
-
-
-# x <- c("I have a pen")
-# y <- c("I have an appen")
-# StrDist(x, y, method = "normlevenshtein")
-
-
 #Load data set
 s<-getwd()
-substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"results/Standardized_Deduped_Datasets/June_Clean_20180719.csv",sep = "")
+#substr(s, 1, nchar(s)-5)
+datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180719.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
 
@@ -36,34 +29,39 @@ result <- result %>%
 #But there are some empty title and description, so I am deleting empty titles.
 result <- result[!(result$title==""),]
 
+#result "" to NA.
+result$sqft[which(result$sqft==" ")] <- NA
+
 #So, for Kijiji, no desc. 
 result$source <- as.factor(result$source)
 str(result$source)
 result_craig <- result %>% filter(source=="Craigslist")
 result_kjj <- result %>% filter(source!="Craigslist")
-result_kjj$source <- result_kjj$source
-summary(result$source)# I will replace kijiji to Kijiji, and then start deduplication for that.
+result_kjj$source[which(result_kjj$source=='kijiji')] <- "Kijiji"
+# I will replace kijiji to Kijiji, and then start deduplication for that.
+summary(result_kjj$source)
 
+#So I've done standardization of source variable, so i will start dedup process for craigslist 
+sum(is.na(result_craig$description))# Since no desc value is NA, we will go for title and desc comparision.
+sum(is.na(result_craig$lat))#But there are many(ex.471) values with lat, long as NA.
 
 #Let's delete the exact duplicates from the same name "or" the same description
-dif.ttl.or.dif.des<- result %>% 
+dif.ttl.or.dif.des<- result_craig %>% 
   filter(!duplicated(title)|!duplicated(description)) 
 
-dif.ttl.and.dif.des<- result %>% 
-  filter(!duplicated(title)&!duplicated(description)) %>% 
-  arrange(lat,long)
+# dif.ttl.and.dif.des<- result_craig %>% 
+#   filter(!duplicated(title)&!duplicated(description)) %>% 
+#   arrange(lat,long)
 
 
 #same title
-same.title <- result %>% 
+same.title <- result_craig %>% 
   filter(duplicated(title)) %>% arrange(title)
 
 #same desc
-same.desc <- result %>% 
+same.desc <- result_craig %>% 
   filter(duplicated(description)) %>% arrange(description)
-#So many NA values in desc due to kijiji data set. 
 same.desc <- same.desc[!is.na(same.desc$description),]
-
 
 #same title and different description
 same.ttl.diff.desc <- same.title %>% 
@@ -100,8 +98,6 @@ same.desc.diff.ttl <- same.desc %>%
   filter(!(ID%in%same.title$ID)) %>% 
   arrange(description) 
 
-
-
 #So many ,,,, description makes it confused, so will delete them.
 desc.temp <- gsub(","," ",same.desc.diff.ttl$description)
 desc.temp <- gsub("\n"," ",same.desc.diff.ttl$description)
@@ -109,88 +105,156 @@ same.desc.diff.ttl<- same.desc.diff.ttl[grep("\\b \\b", desc.temp),] %>% arrange
 
 #Let's remove this part.
 same.desc.diff.ttl.same.loc <- same.desc.diff.ttl %>% filter(duplicated(gcs))
+same.desc.diff.ttl.same.loc <- same.desc.diff.ttl.same.loc[!is.na(same.desc.diff.ttl.same.loc$long),]
 
 #it's removing data with two variables having same values.
 excl.same.desc.same.loc.dif.ttl <-  excl.same.ttl.same.loc.dif.des%>% 
   filter(!(ID%in%same.desc.diff.ttl.same.loc$ID))
-
 #So we have excl.same.desc.same.loc.dif.ttl data frame!
 
-#So anyway,if [i,j]value exceeds 400, I will remove it. 
-#If i>j, [i,j]and [j,i] will have the same value. I will delete the second one, which means i.
-dup.candidates <- c()
-for (i in 1:(nrow(edit.matrix)-1)) {
-  for (j in (i+1):nrow(edit.matrix)) {
-    if (edit.matrix[i,j]<200) {
-      dup.candidates <- c(dup.candidates,j)
-    }
-  }
-}
+#Let's check if the duplicates candidates have same title!
+excl.same.desc.same.loc.dif.ttl %>% filter(ID==3699) %>% select(title)==excl.same.desc.same.loc.dif.ttl %>% filter(ID==2213)%>% select(title)
 
-dup.candidates <- dup.candidates[!duplicated(dup.candidates)]
+#Let's delete data set having same title, gcs, rooms and price.
+excl.same.ttl.gcs.rms.sqft<- excl.same.desc.same.loc.dif.ttl %>% 
+  filter(!duplicated(title)|!duplicated(gcs)|!duplicated(rooms)|!duplicated(sqft)|!duplicated(location)) %>% arrange(title)
+
+val.excl.excl.same.ttl.gcs.rms.sqft <- excl.same.desc.same.loc.dif.ttl %>% filter(!(ID%in%excl.same.ttl.gcs.rms.sqft$ID))
+excl.same.ttl.gcs.rms.sqft$description <- gsub(",","",excl.same.ttl.gcs.rms.sqft$description)
+excl.same.ttl.gcs.rms.sqft$ti = substr(excl.same.ttl.gcs.rms.sqft$title, 1, 5)
+excl.same.ttl.gcs.rms.sqft$lt = substr(excl.same.ttl.gcs.rms.sqft$lat, 4, 7)
+excl.same.ttl.gcs.rms.sqft$lg = substr(excl.same.ttl.gcs.rms.sqft$long, 6, 9)
+crag.rpairs <- RLBigDataDedup(excl.same.ttl.gcs.rms.sqft,blockfld = c('ti','lt','lg'),exclude = c('address','city','country','date','province','lat','long','source',"url","inSurrey",'ID','ti','lt','lg'),
+                         strcmp=c('title','description'),strcmpfun = "jarowinkler")
+summary(crag.rpairs)
+
+crag.rpairs=emWeights(crag.rpairs)
+
+#hist(rpairs$Wdata, plot=F)
+#Error in rpairs$Wdata : $ operator not defined for this S4 class
+# getPairs(rpairs,30,20)
+summary(crag.rpairs)
+#crag.rpairs=emClassify(crag.rpairs, threshold.upper=0, threshold.lower=-26)
+crag.possibles <- getPairs(crag.rpairs)
+summary(crag.rpairs)
+#View(crag.possibles)
+crag.links=getPairs(crag.rpairs,single.rows = T)
+
+###########Result.Kijiji############
+#View(result_kjj)
+
+kjj.rpairs <- RLBigDataDedup(result_kjj,blockfld = c('location'),exclude = c('address','city','country','date','description','lat','long', 'province','rooms','sqft','source',"url","inSurrey",'ID','gcs'),
+                         strcmp=c('title'),strcmpfun = "jarowinkler")
+summary(kjj.rpairs)
+kjj.rpairs=emWeights(kjj.rpairs)
+summary(kjj.rpairs)
+#kjj.rpairs=emClassify(kjj.rpairs, threshold.upper=0, threshold.lower=-26)
+kjj.possibles <- getPairs(kjj.rpairs)
+summary(kjj.rpairs)
+#View(kjj.possibles)
+kjj.links=getPairs(kjj.rpairs,single.rows = T)
+
+#####
+
+June_RL_cleaned_crag <-  excl.same.ttl.gcs.rms.sqft%>% 
+  filter(!ID%in%c(crag.links$id.2)) %>% select(-c(gcs,ti,lt,lg))
+June_RL_cleaned_kjj <-  result_kjj%>% 
+  filter(!ID%in%c(kjj.links$id.2)) %>% select(-c(gcs))
+
+June_RL_cleaned<- rbind(June_RL_cleaned_crag,June_RL_cleaned_kjj)
+crag.rpairs %>% select(ti)
+
+crag.links_for_Zhe=getPairs(crag.rpairs)
+kjj.links_for_Zhe=getPairs(kjj.rpairs)
+crag.links_for_Zhe=crag.links_for_Zhe %>% select(-c(ti,lt,lg))
+candidate_links_for_Zhe <-rbind(crag.links_for_Zhe,kjj.links_for_Zhe)
+
+#/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets
+#Save dif.ttl.or.dif.gcs csv and same.ttl.and.same.csv. 
+write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180808.csv")
+write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Candidate__Duplicated_June_20180808.csv")
 
 
-
-#########For duplicates only
-set.seed(1)
-##let's sample 100 observations from the A union B.
-sampled.index <- sample(1:nrow(dif.ttl.or.dif.des), 100, replace = FALSE)
-##
-sampled.data <- dif.ttl.or.dif.des %>% 
-  filter(as.numeric(rownames(dif.ttl.or.dif.des))%in%sampled.index) %>% 
-  arrange(title)
-
-#ID first, removing "" next result goes to the dataset, and we got the matrix.
-dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
-sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
-rownames(sample.edit.matrix) <- sampled.data$ID
-colnames(sample.edit.matrix) <- sampled.data$ID
-for (i in 1:(nrow(sampled.data)-1)) {
-  for (j in (i+1):nrow(sampled.data)) {
-    first.id <- sampled.data$ID[i]
-    second.id <- sampled.data$ID[j]
-    matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
-    matrix.index <- as.numeric(matrix.index$rowname)
-    edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
-    sample.edit.matrix[i,j] <- edit.value
-  }
-}
-sample.edit.vector <- as.vector(sample.edit.matrix)
-his.nondup <- hist(sample.edit.vector)
-###########
-
-#########So I am comparing the difference of the distributions of two subset.
-set.seed(1)
-sampled.index <- sample(1:nrow(same.ttl.diff.desc), 100, replace = FALSE)
-
-sampled.data <- same.ttl.diff.desc %>% 
-  filter(as.numeric(rownames(same.ttl.diff.desc))%in%sampled.index) %>% 
-  arrange(title)
-
-#ID first, removing "" next result goes to the dataset, and we got the matrix.
-dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
-sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
-rownames(sample.edit.matrix) <- sampled.data$ID
-colnames(sample.edit.matrix) <- sampled.data$ID
-for (i in 1:(nrow(sampled.data)-1)) {
-  for (j in (i+1):nrow(sampled.data)) {
-    first.id <- sampled.data$ID[i]
-    second.id <- sampled.data$ID[j]
-    matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
-    matrix.index <- as.numeric(matrix.index$rowname)
-    edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
-    sample.edit.matrix[i,j] <- edit.value
-  }
-}
-sample.edit.vector.dup <- as.vector(sample.edit.matrix)
-his.du <- hist(sample.edit.vector.dup)
-hist(sample.edit.vector.dup)
-hist(sample.edit.vector)
-View(his.nondup)
-###########
-
-a <- as.vector(edit.matrix)
-hist(a)
+##########################################Below is past practice########################################################
+# x <- c("I have a pen")
+# y <- c("I have an appen")
+# a <- StrDist(x, y, method = "normlevenshtein")
+# 
+# #So anyway,if [i,j]value exceeds 400, I will remove it. 
+# #If i>j, [i,j]and [j,i] will have the same value. I will delete the second one, which means i.
+# dup.candidates <- c()
+# for (i in 1:(nrow(edit.matrix)-1)) {
+#   for (j in (i+1):nrow(edit.matrix)) {
+#     if (edit.matrix[i,j]<200) {
+#       dup.candidates <- c(dup.candidates,j)
+#     }
+#   }
+# }
+# 
+# dup.candidates <- dup.candidates[!duplicated(dup.candidates)]
+# 
+# 
+# 
+# #########For duplicates only
+# set.seed(1)
+# ##let's sample 100 observations from the A union B.
+# sampled.index <- sample(1:nrow(dif.ttl.or.dif.des), 100, replace = FALSE)
+# ##
+# sampled.data <- dif.ttl.or.dif.des %>% 
+#   filter(as.numeric(rownames(dif.ttl.or.dif.des))%in%sampled.index) %>% 
+#   arrange(title)
+# 
+# #ID first, removing "" next result_craig goes to the dataset, and we got the matrix.
+# dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
+# sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
+# rownames(sample.edit.matrix) <- sampled.data$ID
+# colnames(sample.edit.matrix) <- sampled.data$ID
+# for (i in 1:(nrow(sampled.data)-1)) {
+#   for (j in (i+1):nrow(sampled.data)) {
+#     first.id <- sampled.data$ID[i]
+#     second.id <- sampled.data$ID[j]
+#     matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
+#     matrix.index <- as.numeric(matrix.index$rowname)
+#     edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
+#     sample.edit.matrix[i,j] <- edit.value
+#   }
+# }
+# sample.edit.vector <- as.vector(sample.edit.matrix)
+# his.nondup <- hist(sample.edit.vector)
+# ###########
+# 
+# #########So I am comparing the difference of the distributions of two subset.
+# set.seed(1)
+# sampled.index <- sample(1:nrow(same.ttl.diff.desc), 100, replace = FALSE)
+# 
+# sampled.data <- same.ttl.diff.desc %>% 
+#   filter(as.numeric(rownames(same.ttl.diff.desc))%in%sampled.index) %>% 
+#   arrange(title)
+# 
+# #ID first, removing "" next result_craig goes to the dataset, and we got the matrix.
+# dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
+# sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
+# rownames(sample.edit.matrix) <- sampled.data$ID
+# colnames(sample.edit.matrix) <- sampled.data$ID
+# for (i in 1:(nrow(sampled.data)-1)) {
+#   for (j in (i+1):nrow(sampled.data)) {
+#     first.id <- sampled.data$ID[i]
+#     second.id <- sampled.data$ID[j]
+#     matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
+#     matrix.index <- as.numeric(matrix.index$rowname)
+#     edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
+#     sample.edit.matrix[i,j] <- edit.value
+#   }
+# }
+# sample.edit.vector.dup <- as.vector(sample.edit.matrix)
+# his.du <- hist(sample.edit.vector.dup)
+# hist(sample.edit.vector.dup)
+# hist(sample.edit.vector)
+# View(his.nondup)
+# ###########
+# 
+# a <- as.vector(edit.matrix)
+# hist(a)
 
 
 

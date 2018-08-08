@@ -13,8 +13,7 @@ library(RecordLinkage)
 
 #Load data set
 s<-getwd()
-substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"results/Standardized_Deduped_Datasets/Louie_Clean_20180719.csv",sep = "")
+datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Louie_Clean_20180719.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
 
@@ -53,20 +52,26 @@ same.gcs <- result %>%
 same.ttl.same.gcs <- same.title %>% 
   filter((ID%in%same.gcs$ID)) %>% arrange(title)
 
+View(dif.ttl.or.dif.gcs %>% arrange(title))
 
-pairs=compare.dedup(dif.ttl.or.dif.gcs,blockfld=list(c('price','title'),c('sqft','title'),c('gcs','title')))
-summary(pairs)
-
-
-
-possibles <- getPairs(pairs)
-View(possibles)
-
-
+dif.ttl.or.dif.gcs$ti = substr(dif.ttl.or.dif.gcs$title, 1, 4)
+dif.ttl.or.dif.gcs$lt = substr(dif.ttl.or.dif.gcs$lat, 4, 5)
+dif.ttl.or.dif.gcs$lg = substr(dif.ttl.or.dif.gcs$long, 6, 7)
+l.pairs <- RLBigDataDedup(dif.ttl.or.dif.gcs,blockfld = c('ti','lt','lg','rooms'),exclude = c('address','city','country','date','description','location','province','source',"url",'ID','ti','lt','lg'),
+                         strcmp=c('title'),strcmpfun = "jarowinkler")
+summary(l.pairs)
+l.pairs=emWeights(l.pairs)
+summary(l.pairs)
+l.pairs=emClassify(l.pairs, threshold.upper=0, threshold.lower=-26)
+l.possibles <- getPairs(l.pairs)
+View(l.possibles)
+l.links=getPairs(l.pairs, single.rows = T)
+Louie_RL_cleaned <- dif.ttl.or.dif.gcs %>% 
+  filter(!ID%in%l.links$id.2) %>% select(-c(gcs,ti,lt,lg,ID))
+l.links_for_Zhe=l.links=getPairs(l.pairs)
+#/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets
 #Save dif.ttl.or.dif.gcs csv and same.ttl.and.same.csv. 
-write.csv(dif.ttl.or.dif.gcs, file = "Louie_Clean_20180726.csv")
-write.csv(same.ttl.same.gcs, file = "Known_Duplicated_Louie_20180726.csv")
-write.csv(possibles, file = "Candidate_Duplicated_Louie_20180726.csv")
-#
-
+write.csv(Louie_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Louie_Clean_20180808.csv")
+write.csv(l.links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Candidate_Duplicated_Louie_20180808.csv")
+#write.csv(same.ttl.same.gcs, file = "Known_Duplicated_Louie_20180808.csv")
                                                                                   
