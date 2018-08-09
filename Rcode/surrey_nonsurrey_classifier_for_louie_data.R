@@ -4,8 +4,8 @@ library("tidyverse")
 
 #Load data set
 s<-getwd()
-substr(s, 1, nchar(s)-5)
-datapath<-paste(substr(s, 1, nchar(s)-5),"/results/Standardized_Deduped_Datasets/Louie_Clean_20180718.csv",sep = "")
+
+datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180808.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE)
 
@@ -94,5 +94,5 @@ surrey.region.data <- rbind(test[[1]],test[[3]],test[[4]])
 non.surrey.region.data <- test[[2]]
 
 
-filename<-paste(substr(s, 1, nchar(s)-5),"/results/Standardized_Deduped_Datasets/Louie_Clean_20180719.csv",sep = "")
+filename<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/temp.csv",sep = "")
 write.csv(surrey.region.data,file=filename)
