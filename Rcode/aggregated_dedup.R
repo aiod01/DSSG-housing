@@ -13,10 +13,13 @@ library(PASWR)
 #Load data set
 s<-getwd()
 #substr(s, 1, nchar(s)-5) #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/data_cleaning/_DeDuplication
-datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180719.csv",sep = "")
+datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180809.csv",sep = "")
+datapath2<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180809.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
-result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
+result1 <- read.csv(file=datapath1,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
+result2 <- read.csv(file=datapath2,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
 
+result=rbind(result1,result2)
 #Arrangnig the dataset by title.
 result<- result %>% 
   arrange(desc(date)) %>% 
@@ -129,7 +132,7 @@ excl.same.ttl.gcs.rms.sqft$lt = substr(excl.same.ttl.gcs.rms.sqft$lat, 4, 7)
 excl.same.ttl.gcs.rms.sqft$lg = substr(excl.same.ttl.gcs.rms.sqft$long, 6, 9)
 
 crag.rpairs <- RLBigDataDedup(excl.same.ttl.gcs.rms.sqft,blockfld = c('ti','lt','lg'),exclude = c('address','city','country','date','province','lat','long','source',"url","inSurrey",'ID','ti','lt','lg'),
-                         strcmp=c('title','description'),strcmpfun = "jarowinkler")
+                              strcmp=c('title','description'),strcmpfun = "jarowinkler")
 summary(crag.rpairs)
 
 crag.rpairs=emWeights(crag.rpairs)
@@ -148,7 +151,7 @@ crag.links=getPairs(crag.rpairs,single.rows = T)
 #View(result_kjj)
 
 kjj.rpairs <- RLBigDataDedup(result_kjj,blockfld = c('location'),exclude = c('address','city','country','date','description','lat','long', 'province','rooms','sqft','source',"url","inSurrey",'ID','gcs'),
-                         strcmp=c('title'),strcmpfun = "jarowinkler")
+                             strcmp=c('title'),strcmpfun = "jarowinkler")
 summary(kjj.rpairs)
 kjj.rpairs=emWeights(kjj.rpairs)
 summary(kjj.rpairs)
@@ -180,7 +183,7 @@ June_RL_cleaned$lg = substr(June_RL_cleaned$long, 6, 8)
 June_RL_cleaned <- June_RL_cleaned %>% 
   mutate(gcs=paste(lat,long))
 ag.rpairs <- RLBigDataDedup(June_RL_cleaned,blockfld = c('ti','lt','lg'),exclude = c('address','city','country','date','province','lat','long','source',"url","inSurrey",'ID','ti','lt','lg'),
-                              strcmp=c('title','description'),strcmpfun = "jarowinkler")
+                            strcmp=c('title','description'),strcmpfun = "jarowinkler")
 summary(ag.rpairs)
 ag.rpairs=emWeights(ag.rpairs)
 summary(ag.rpairs)
@@ -200,8 +203,8 @@ candidate_links_for_Zhe <-rbind(candidate_links_for_Zhe,ag.links_for_Zhe)
 
 #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets
 #Save dif.ttl.or.dif.gcs csv and same.ttl.and.same.csv. 
-write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180809.csv")
-write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Candidate__Duplicated_July_20180809.csv")
+write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated_Clean_20180809.csv")
+write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated__Duplicated_July_20180809.csv")
 
 
 ##########################################Below is past practice########################################################

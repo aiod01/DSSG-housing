@@ -25,5 +25,7 @@ dat3 <- dat3 %>% select(-c(X,ID,inSurrey))
 dat3$from <- 'July'
 aggreated_dat <-rbind(dat1,dat2)
 aggreated_dat <-rbind(aggreated_dat,dat3)
-
+aggreated_dat$ID <- seq(1:nrow(aggreated_dat))
+set.seed(1)
 samples <- sample_n(aggreated_dat, 1000)
+write.csv(samples, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20180809.csv")
