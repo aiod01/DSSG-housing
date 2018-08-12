@@ -13,7 +13,7 @@ library(PASWR)
 #Load data set
 s<-getwd()
 #substr(s, 1, nchar(s)-5) #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/data_cleaning/_DeDuplication
-datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180719.csv",sep = "")
+datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180719.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result <- read.csv(file=datapath,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
 
@@ -200,8 +200,8 @@ candidate_links_for_Zhe <-rbind(candidate_links_for_Zhe,ag.links_for_Zhe)
 
 #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets
 #Save dif.ttl.or.dif.gcs csv and same.ttl.and.same.csv. 
-write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180809.csv")
-write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Candidate__Duplicated_July_20180809.csv")
+write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180809_val.csv")
+write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Candidate__Duplicated_June_20180809_val.csv")
 
 
 ##########################################Below is past practice########################################################

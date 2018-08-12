@@ -13,8 +13,8 @@ library(PASWR)
 #Load data set
 s<-getwd()
 #substr(s, 1, nchar(s)-5) #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/data_cleaning/_DeDuplication
-datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180809.csv",sep = "")
-datapath2<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180809.csv",sep = "")
+datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180809_val.csv",sep = "")
+datapath2<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180809_val.csv",sep = "")
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 result1 <- read.csv(file=datapath1,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
 result2 <- read.csv(file=datapath2,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
@@ -203,90 +203,6 @@ candidate_links_for_Zhe <-rbind(candidate_links_for_Zhe,ag.links_for_Zhe)
 
 #/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets
 #Save dif.ttl.or.dif.gcs csv and same.ttl.and.same.csv. 
-write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated_Clean_20180809.csv")
-write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated__Duplicated_July_20180809.csv")
-
-
-##########################################Below is past practice########################################################
-# x <- c("I have a pen")
-# y <- c("I have an appen")
-# a <- StrDist(x, y, method = "normlevenshtein")
-# 
-# #So anyway,if [i,j]value exceeds 400, I will remove it. 
-# #If i>j, [i,j]and [j,i] will have the same value. I will delete the second one, which means i.
-# dup.candidates <- c()
-# for (i in 1:(nrow(edit.matrix)-1)) {
-#   for (j in (i+1):nrow(edit.matrix)) {
-#     if (edit.matrix[i,j]<200) {
-#       dup.candidates <- c(dup.candidates,j)
-#     }
-#   }
-# }
-# 
-# dup.candidates <- dup.candidates[!duplicated(dup.candidates)]
-# 
-# 
-# 
-# #########For duplicates only
-# set.seed(1)
-# ##let's sample 100 observations from the A union B.
-# sampled.index <- sample(1:nrow(dif.ttl.or.dif.des), 100, replace = FALSE)
-# ##
-# sampled.data <- dif.ttl.or.dif.des %>% 
-#   filter(as.numeric(rownames(dif.ttl.or.dif.des))%in%sampled.index) %>% 
-#   arrange(title)
-# 
-# #ID first, removing "" next result_craig goes to the dataset, and we got the matrix.
-# dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
-# sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
-# rownames(sample.edit.matrix) <- sampled.data$ID
-# colnames(sample.edit.matrix) <- sampled.data$ID
-# for (i in 1:(nrow(sampled.data)-1)) {
-#   for (j in (i+1):nrow(sampled.data)) {
-#     first.id <- sampled.data$ID[i]
-#     second.id <- sampled.data$ID[j]
-#     matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
-#     matrix.index <- as.numeric(matrix.index$rowname)
-#     edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
-#     sample.edit.matrix[i,j] <- edit.value
-#   }
-# }
-# sample.edit.vector <- as.vector(sample.edit.matrix)
-# his.nondup <- hist(sample.edit.vector)
-# ###########
-# 
-# #########So I am comparing the difference of the distributions of two subset.
-# set.seed(1)
-# sampled.index <- sample(1:nrow(same.ttl.diff.desc), 100, replace = FALSE)
-# 
-# sampled.data <- same.ttl.diff.desc %>% 
-#   filter(as.numeric(rownames(same.ttl.diff.desc))%in%sampled.index) %>% 
-#   arrange(title)
-# 
-# #ID first, removing "" next result_craig goes to the dataset, and we got the matrix.
-# dif.ttl.or.dif.des <- rownames_to_column(dif.ttl.or.dif.des,var="rowname")
-# sample.edit.matrix <- matrix(data=NA, nrow=100, ncol=100)
-# rownames(sample.edit.matrix) <- sampled.data$ID
-# colnames(sample.edit.matrix) <- sampled.data$ID
-# for (i in 1:(nrow(sampled.data)-1)) {
-#   for (j in (i+1):nrow(sampled.data)) {
-#     first.id <- sampled.data$ID[i]
-#     second.id <- sampled.data$ID[j]
-#     matrix.index <- dif.ttl.or.dif.des %>% filter(ID%in%c(first.id,second.id)) %>% dplyr::select(rowname) %>% arrange(rowname)
-#     matrix.index <- as.numeric(matrix.index$rowname)
-#     edit.value <- edit.matrix[matrix.index[1],matrix.index[2]]
-#     sample.edit.matrix[i,j] <- edit.value
-#   }
-# }
-# sample.edit.vector.dup <- as.vector(sample.edit.matrix)
-# his.du <- hist(sample.edit.vector.dup)
-# hist(sample.edit.vector.dup)
-# hist(sample.edit.vector)
-# View(his.nondup)
-# ###########
-# 
-# a <- as.vector(edit.matrix)
-# hist(a)
-
-
+write.csv(June_RL_cleaned, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated_Clean_20180809_val.csv")
+write.csv(candidate_links_for_Zhe, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated__Duplicated_July_20180809_val.csv")
 
