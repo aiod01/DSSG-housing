@@ -13,7 +13,7 @@
 #Load data set
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 s<-getwd()
-datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20180810-JL_partial_labels.csv",sep = "")
+datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20180810_labelledJA.csv",sep = "")
 # datapath2<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180718.csv",sep = "")
 # datapath3<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180718.csv",sep = "")
 dat1 <- read.csv(file=datapath1,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
