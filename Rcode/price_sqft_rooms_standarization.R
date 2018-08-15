@@ -13,7 +13,7 @@
 #Load data set
 #If you cannot load the raw dataset, you need to set it by yourself by matching the csv file name.
 s<-getwd()
-datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20180810_merged.csv",sep = "")
+datapath1<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated_Clean_20180809.csv",sep = "")
 # datapath2<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/June_Clean_20180718.csv",sep = "")
 # datapath3<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180718.csv",sep = "")
 dat1 <- read.csv(file=datapath1,header=T,stringsAsFactors = FALSE,na.strings = c("","NA"))
@@ -36,14 +36,17 @@ dat1$ID <- NULL
 # aggregated_dat <-rbind(aggregated_dat,dat3)
 
 temp <- gsub("/","",dat1$rooms)
+sum(is.na(temp))
+sum(is.na(dat1$rooms))
 temp <- gsub("br","",temp)
 temp <- gsub("bedroom","",temp)
 temp <- gsub(" ","",temp)
 temp <- gsub("den","",temp)
 temp <- gsub("bachelor","1",temp)
-
+sum(is.na(temp))
 #to remove sqft values on the rooms variable.
 temp[grep("ft", temp)] <- NA
+sum(is.na(temp))
 
 dat1$rooms <- as.factor(temp)
 
@@ -54,6 +57,7 @@ head(temp_sqft)
 str(temp_sqft)
 temp_sqft[1]
 sum(is.na(temp_sqft))
+sum(is.na(dat1$sqft))
 temp_sqft_numeric <- as.numeric(temp_sqft)
 sum(is.na(temp_sqft_numeric))
 dat1$sqft <- temp_sqft_numeric
@@ -75,5 +79,5 @@ dat1$price <- temp_price
 str(dat1)
 
 
-write.csv(dat1, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20180813_merged.csv")
+write.csv(dat1, file = "/Users/hyeongcheolpark/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/Aggregated_Clean_20180813.csv")
 
