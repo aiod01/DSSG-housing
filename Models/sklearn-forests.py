@@ -69,3 +69,4 @@ predict2 = clf.predict(test[features])
 test['predict2'] = predict2
 scores2 = cross_val_score(clf, train[features], train['Category_text'], cv=10)
 print("Accuracy: %0.2f (+/- %0.2f)" % (scores2.mean(), scores2.std() * 2))
+
