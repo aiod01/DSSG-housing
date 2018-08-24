@@ -23,11 +23,24 @@ def clean_na(grid):
         return grid
 
 
+def drop_column(col_array):
+    for col in col_array:
+        try:
+            if col in df.columns:
+                df.drop([col], axis=1, inplace=True)
+        except FileNotFoundError as e:
+            print(e)
+            continue
+
+
 csv_data = pd.read_csv('Imputated_data_m_1_20180822.csv')
 
 df = pd.DataFrame(csv_data)
 
-df.drop(['X.2', 'X.3'], axis=1, inplace=True)
+#df.drop(['X.2', 'X.3'], axis=1, inplace=True)
+drop_column(['X.1', 'X.2', 'X.3'])
+
+
 df['price'] = df['price'].map(clean_na)
 df['rooms'] = df['rooms'].map(clean_na)
 df['sqft'] = df['sqft'].map(clean_na)
@@ -60,6 +73,7 @@ accuracy = accuracy_score(y_test, y_pred)
 print('Score is : ' + str(accuracy))
 
 
+#Checking result proportion
 y_pred = y_pred.tolist()
 
 unique, counts = np.unique(y_pred, return_counts=True)
