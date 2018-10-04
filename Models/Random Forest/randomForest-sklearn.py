@@ -8,13 +8,14 @@ import pandas as pd
 import numpy as np
 import scipy.sparse as sp
 import matplotlib.pyplot as plt
+import os
+import config
 
-
+# -------------------------- Helper Functions ------------------------------
 # Missing value imputation
 # Input: Dataframe df, value to replace missing values with, column name
 def missingImputation(df, value, colName):
     df[colName].fillna(value, inplace=True)
-
 
 # Missing value imputation for multiple columns at once
 def missingImputationMulti (df, value, colNames):
@@ -27,12 +28,32 @@ def threeCategory(df):
     df['Category_3'] = df['Category'].dropna().apply(lambda x: "1" if x < 3.0 else ("2" if x < 4.0 else "3"))
     df['Category_text'] = df['Category'].apply(lambda x: str(x))
 
+# Fit the model and print the accuracy scores
+def getResults(model_name, clf, train_x, train_y, predict_x, proba=False):
+    clf.fit(train_x, train_y)
+    predict2 = clf.predict(predict_x)
+    test['predict2'] = predict2
+    if proba:
+        getClassificationProbability(model_name, clf, predict_x)
+    print(model_name)
+    print("Prediction accuracy: %0.2f" % clf.score(predict_x, test['Category_text']))
+    print("OOB score: %0.2f" % clf.oob_score_)
+
+# TODO: concat isn't outputting correct DF
+# Gets the probability of the classification categories, output csv
+def getClassificationProbability(model_name, clf, predict_x):
+    proba = pd.DataFrame(clf.predict_proba(predict_x))
+    outfile = pd.concat([test, proba], ignore_index=True)
+    outfile.to_csv(os.path.join(config.ROOT_DIR, "Categorization ML Data", "Outputs", f"{model_name}.csv"))
+
+# -------------------------- Script to run and print the classifiers ------------------------------
 
 # define input file path here:
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_withoutstar_labelledJA.csv"
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_labelledJA.csv"
-f= "C:/Users/jocel/PycharmProjects/scraper/results/Standardized_Deduped_Datasets/Imputated_data_sqft_price_rooms.csv"
-f2="C:/Users/jocel/PycharmProjects/scraper/results/Standardized_Deduped_Datasets/Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv"
+f = os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets', "Imputated_data_sqft_price_rooms.csv")
+f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
+                 'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
 
 arr = []
 arr2= []
@@ -41,21 +62,24 @@ df = pd.read_csv(f)
 colNames = ['lat', 'long', 'price', 'sqft', 'rooms' ]
 colNamesString = ['title', 'description']
 df = df[pd.notnull(df['Category'])]
+# Missing value imputation + collapse categories into 3
 missingImputationMulti(df, -1, colNames)
 missingImputationMulti(df, "", colNamesString)
 threeCategory(df)
 
-
+# One hot encoding for Rooms variable
 rooms = pd.get_dummies(df['rooms'])
 df = pd.concat([df, rooms], axis=1)
 
-# for i in range (1,20):
-vec = text.TfidfVectorizer(max_df=0.7)
-
+# create a stratified train-test split
 train, test = train_test_split(df, test_size=0.2, stratify=df['Category_3'])
+
+# tfidf vectorizer for title
+vec = text.TfidfVectorizer(max_df=0.7)
 train_x = vec.fit_transform(train['title'])
 test_x = vec.transform(test['title'])
 
+# join the tf-idf matrix with other features
 df2 = train[[0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,  'price', 'sqft']]
 features = sp.hstack([train_x, df2.values])
 test_features = sp.hstack([test_x, test[[0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 'price', 'sqft']].values])
@@ -66,20 +90,22 @@ model.fit(train_x, train["Category_text"])
 test['predict'] = model.predict(test_x)
 scores = metrics.accuracy_score(test['Category_text'],test['predict'])
 c_val_score = cross_val_score(model, train_x, train['Category_text'], cv=10)
+print("Logistic Regression")
 print("Accuracy: %0.2f (+/- %0.2f)" % (c_val_score.mean(), c_val_score.std() * 2))
-print(scores)
+print("Prediction: %0.2f" % scores)
 
-#features = ['price', 'sqft', 0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+# Random Forest Classifier from sklearn
+clf = RandomForestClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True)
 
 #Random forest, TFIDF titles, 10 classes
-clf = RandomForestClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True)
-clf.fit(train_x, train['Category_text'])
-predict2 = clf.predict(test_x)
-test['predict2'] = predict2
-proba = pd.DataFrame(clf.predict_proba(test_x))
-test_out = pd.concat([test, proba], ignore_index=True)
-#test_out.to_csv("C:/Users/jocel/PycharmProjects/scraper/Categorization ML Data/Outputs/test_set_prob.csv")
-print("Prediction accuracy: %0.2f" % clf.score(test_x, test['Category_text']))
+getResults("rf-titles-10categories", clf, train_x, train['Category_text'], test_x, proba=True)
+# clf.fit(train_x, train['Category_text'])
+# predict2 = clf.predict(test_x)
+# test['predict2'] = predict2
+# proba = pd.DataFrame(clf.predict_proba(test_x))
+# test_out = pd.concat([test, proba], ignore_index=True)
+# #test_out.to_csv("C:/Users/jocel/PycharmProjects/scraper/Categorization ML Data/Outputs/test_set_prob.csv")
+# print("Prediction accuracy: %0.2f" % clf.score(test_x, test['Category_text']))
 
 #Random forest, TFIDF titles, 3 classes
 clf.fit(train_x, train['Category_3'])
