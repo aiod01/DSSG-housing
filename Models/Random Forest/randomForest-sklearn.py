@@ -29,22 +29,24 @@ def threeCategory(df):
     df['Category_text'] = df['Category'].apply(lambda x: str(x))
 
 # Fit the model and print the accuracy scores
-def getResults(model_name, clf, train_x, train_y, predict_x, proba=False):
+def getResults(model_name, clf, test, train_x, train_y, test_x, test_y, proba=False):
     clf.fit(train_x, train_y)
-    predict2 = clf.predict(predict_x)
+    predict2 = clf.predict(test_x)
     test['predict2'] = predict2
     if proba:
-        getClassificationProbability(model_name, clf, predict_x)
+        getClassificationProbability(model_name, clf, test, test_x)
     print(model_name)
-    print("Prediction accuracy: %0.2f" % clf.score(predict_x, test['Category_text']))
+    print("Prediction accuracy: %0.2f" % clf.score(test_x, test_y))
     print("OOB score: %0.2f" % clf.oob_score_)
+    return test
 
-# TODO: concat isn't outputting correct DF
 # Gets the probability of the classification categories, output csv
-def getClassificationProbability(model_name, clf, predict_x):
-    proba = pd.DataFrame(clf.predict_proba(predict_x))
-    outfile = pd.concat([test, proba], ignore_index=True)
-    outfile.to_csv(os.path.join(config.ROOT_DIR, "Categorization ML Data", "Outputs", f"{model_name}.csv"))
+def getClassificationProbability(model_name, clf, test, test_x):
+    proba = pd.DataFrame(clf.predict_proba(test_x))
+    proba = proba.add_prefix('proba_')
+    test2 = test.reset_index()
+    outfile = pd.concat([test2, proba], axis=1)
+    outfile.to_csv(os.path.join(config.ROOT_DIR, "Categorization ML Data", "Outputs", f"{model_name}.csv"), index=False)
 
 # -------------------------- Script to run and print the classifiers ------------------------------
 
@@ -69,6 +71,7 @@ threeCategory(df)
 
 # One hot encoding for Rooms variable
 rooms = pd.get_dummies(df['rooms'])
+rooms = rooms.add_prefix('rms_')
 df = pd.concat([df, rooms], axis=1)
 
 # create a stratified train-test split
@@ -80,9 +83,11 @@ train_x = vec.fit_transform(train['title'])
 test_x = vec.transform(test['title'])
 
 # join the tf-idf matrix with other features
-df2 = train[[0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0,  'price', 'sqft']]
+df2 = train[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2.0', 'rms_3.0', 'rms_4.0',
+             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price', 'sqft']]
 features = sp.hstack([train_x, df2.values])
-test_features = sp.hstack([test_x, test[[0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 'price', 'sqft']].values])
+test_features = sp.hstack([test_x, test[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2.0', 'rms_3.0', 'rms_4.0',
+             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price', 'sqft']].values])
 
 #Logistic regression with TFIDF on titles, 10 classes
 model = LogisticRegression()
@@ -98,34 +103,25 @@ print("Prediction: %0.2f" % scores)
 clf = RandomForestClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True)
 
 #Random forest, TFIDF titles, 10 classes
-getResults("rf-titles-10categories", clf, train_x, train['Category_text'], test_x, proba=True)
-# clf.fit(train_x, train['Category_text'])
-# predict2 = clf.predict(test_x)
-# test['predict2'] = predict2
-# proba = pd.DataFrame(clf.predict_proba(test_x))
-# test_out = pd.concat([test, proba], ignore_index=True)
-# #test_out.to_csv("C:/Users/jocel/PycharmProjects/scraper/Categorization ML Data/Outputs/test_set_prob.csv")
-# print("Prediction accuracy: %0.2f" % clf.score(test_x, test['Category_text']))
+getResults("rf-titles-10categories", clf, test, train_x, train['Category_text'], test_x, test['Category_text'])
 
 #Random forest, TFIDF titles, 3 classes
-clf.fit(train_x, train['Category_3'])
-print("Prediction accuracy: %0.2f" % clf.score(test_x, test['Category_3']))
-print("OOB score: %0.2f" % clf.oob_score_)
+getResults("rf-titles-3categories", clf, test, train_x, train['Category_3'], test_x, test['Category_3'])
 
 #Random forest, TFIDF titles + rooms, price, 10 classes
-clf.fit(features, train['Category_text'])
-print("Prediction accuracy: %0.2f" % clf.score(test_features, test['Category_text']))
+getResults("rf-titles-rms-price-10categories", clf, test, features, train['Category_text'],
+           test_features, test['Category_text'])
 
 #Random forest, TFIDF titles + rooms, price, 3 classes
-clf.fit(features, train['Category_3'])
-# test["Predicted"] = clf.predict(test_features)
-# train["Predicted"] = clf.predict(features)
-print("Prediction accuracy: %0.2f" % clf.score(test_features, test['Category_3']))
-print("OOB score: %0.2f" % clf.oob_score_)
-arr.append(clf.score(test_features, test['Category_3']))
-arr2.append(1-clf.oob_score_)
-# test.to_csv("C:/Users/jocel/PycharmProjects/scraper/Categorization ML Data/Outputs/1000_test_set_categorized.csv")
-# train.to_csv("C:/Users/jocel/PycharmProjects/scraper/Categorization ML Data/Outputs/1000_train_set_categorized.csv")
+getResults("rf-titles-rms-price-3categories", clf, test, features, train['Category_3'],
+           test_features, test['Category_3'])
+
+# To output the predictions on the test set, either set proba=True or:
+# res = getResults....
+# res.to_csv(filepath)
+
+#arr.append(clf.score(test_features, test['Category_3']))
+#arr2.append(1-clf.oob_score_)
 
 #Code for doing a prediction on the imputed 3000+ data set.
 # df_imputed=pd.read_csv(f2)
