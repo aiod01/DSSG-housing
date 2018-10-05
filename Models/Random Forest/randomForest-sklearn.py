@@ -52,9 +52,9 @@ def getClassificationProbability(clf, test, test_x):
     out_df = pd.concat([test2, proba], axis=1)
     return out_df
 
-def getRFClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True, max_df=0.7):
+def getRFClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True):
     return RandomForestClassifier(n_jobs=n_jobs, n_estimators=n_estimators, random_state=random_state,
-                                  oob_score=oob_score, max_df=max_df)
+                                  oob_score=oob_score)
 
 # Plots the prediction accuracy and OOB scores for the range of estimators from 1 to n_estimators
 def plotVaryingEstimators (n_estimators, test, train_x, train_y, test_x, test_y):
@@ -71,23 +71,6 @@ def plotVaryingEstimators (n_estimators, test, train_x, train_y, test_x, test_y)
     plt.plot(x_coordinate, arr2)
     plt.show()
 
-# # Code for plotting OOB and % accuracy
-def plotVaryingMaxdf(max_df, test, train_x, train_y, test_x, test_y):
-    arr = []
-    arr2 = []
-    for i in range(1, max_df):
-        clf = getRFClassifier(max_df=i)
-        clf = getPredictions(clf, test, train_x, train_y, test_x)
-        pred, oob = getAccuracy(clf, test_x, test_y)
-        arr.append(pred)
-        arr2.append(1.0-oob)
-    x_coordinate = [i/20 for i in range(1, 20)]
-    plt.plot(x_coordinate, arr, label="% Prediction accuracy")
-    plt.plot(x_coordinate, arr2, label= "% OOB error")
-    plt.title("Prediction accuracy and OOB error with varying max_df values")
-    plt.xlabel("max_df")
-    plt.show()
-
 # Code for printing influential features
 def printInfluentialFeatures(clf):
     importances = clf.feature_importances_
@@ -100,6 +83,31 @@ def printInfluentialFeatures(clf):
     for f in range(features.shape[1]):
         print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
 
+# Get tfidfVectorizer and do transformations
+def getTfidfVec(train, test, max_df=0.7):
+    vec = text.TfidfVectorizer(max_df= max_df)
+    train_x = vec.fit_transform(train)
+    test_x = vec.transform(test)
+    return train_x, test_x
+
+# TODO: bugfix required for the for loop to correctly vectorize then fit the models. Try with Pipeline?
+# Code for plotting OOB and % accuracy with varying max_df
+# max_df is the number of points to plot (integer value)
+# def plotVaryingMaxdf(max_df, clf, test, train_tfidf, test_tfidf, train_y, test_y):
+#     arr = []
+#     arr2 = []
+#     for i in range(1, max_df):
+#         train_x, test_x = getTfidfVec(train_tfidf, test_tfidf)
+#         clf = getPredictions(clf, test, test_x, train_x, train_y)
+#         acc, oob = getAccuracy(clf, test_x, test_y)
+#         arr.append(acc)
+#         arr2.append(1.0-oob)
+#     x_coordinate = [i/max_df for i in range(1, max_df)]
+#     plt.plot(x_coordinate, arr, label="% Prediction accuracy")
+#     plt.plot(x_coordinate, arr2, label= "% OOB error")
+#     plt.title("Prediction accuracy and OOB error with varying max_df values")
+#     plt.xlabel("max_df")
+#     plt.show()
 
 # -------------------------- Script to run and print the classifiers ------------------------------
 
@@ -128,9 +136,7 @@ df = pd.concat([df, rooms], axis=1)
 train, test = train_test_split(df, test_size=0.2, stratify=df['Category_3'])
 
 # tfidf vectorizer for title
-vec = text.TfidfVectorizer(max_df=0.7)
-train_x = vec.fit_transform(train['title'])
-test_x = vec.transform(test['title'])
+train_x, test_x = getTfidfVec(train['title'], test['title'])
 
 # join the tf-idf matrix with other features
 df2 = train[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2.0', 'rms_3.0', 'rms_4.0',
@@ -172,5 +178,4 @@ clf = getPredictions(clf, test, features, train['Category_3'], test_features)
 acc, oob = getAccuracy(clf, test_features, test['Category_3'])
 printAccuracy("rf-titles-rms-price-3categories", acc, oob)
 
-
-plotVaryingEstimators(50, test, features, train['Category_3'], test_features, test['Category_3'])
+#plotVaryingEstimators(50, test, features, train['Category_3'], test_features, test['Category_3'])
