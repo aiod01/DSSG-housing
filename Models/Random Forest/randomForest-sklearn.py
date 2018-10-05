@@ -52,11 +52,12 @@ def getClassificationProbability(clf, test, test_x):
     out_df = pd.concat([test2, proba], axis=1)
     return out_df
 
-def getRFClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True):
-    return RandomForestClassifier(n_jobs=n_jobs, n_estimators=n_estimators, random_state=random_state, oob_score=oob_score)
+def getRFClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True, max_df=0.7):
+    return RandomForestClassifier(n_jobs=n_jobs, n_estimators=n_estimators, random_state=random_state,
+                                  oob_score=oob_score, max_df=max_df)
 
 # Plots the prediction accuracy and OOB scores for the range of estimators from 1 to n_estimators
-def plotAccuracyOOBScores (n_estimators, test, train_x, train_y, test_x, test_y):
+def plotVaryingEstimators (n_estimators, test, train_x, train_y, test_x, test_y):
     arr = []
     arr2 = []
     for i in range(1, n_estimators):
@@ -64,11 +65,41 @@ def plotAccuracyOOBScores (n_estimators, test, train_x, train_y, test_x, test_y)
         clf = getPredictions(clf, test, train_x, train_y, test_x)
         pred, oob = getAccuracy(clf, test_x, test_y)
         arr.append(pred)
-        arr2.append(oob)
+        arr2.append(1.0-oob)
     x_coordinate = [i for i in range(len(arr))]
     plt.plot(x_coordinate, arr)
     plt.plot(x_coordinate, arr2)
     plt.show()
+
+# # Code for plotting OOB and % accuracy
+def plotVaryingMaxdf(max_df, test, train_x, train_y, test_x, test_y):
+    arr = []
+    arr2 = []
+    for i in range(1, max_df):
+        clf = getRFClassifier(max_df=i)
+        clf = getPredictions(clf, test, train_x, train_y, test_x)
+        pred, oob = getAccuracy(clf, test_x, test_y)
+        arr.append(pred)
+        arr2.append(1.0-oob)
+    x_coordinate = [i/20 for i in range(1, 20)]
+    plt.plot(x_coordinate, arr, label="% Prediction accuracy")
+    plt.plot(x_coordinate, arr2, label= "% OOB error")
+    plt.title("Prediction accuracy and OOB error with varying max_df values")
+    plt.xlabel("max_df")
+    plt.show()
+
+# Code for printing influential features
+def printInfluentialFeatures(clf):
+    importances = clf.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+                 axis=0)
+    indices = np.argsort(importances)[::-1]
+    print(importances.shape)
+    print("Feature ranking:")
+
+    for f in range(features.shape[1]):
+        print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
+
 
 # -------------------------- Script to run and print the classifiers ------------------------------
 
@@ -142,45 +173,4 @@ acc, oob = getAccuracy(clf, test_features, test['Category_3'])
 printAccuracy("rf-titles-rms-price-3categories", acc, oob)
 
 
-plotAccuracyOOBScores(50, test, features, train['Category_3'], test_features, test['Category_3'])
-
-#Code for doing a prediction on the imputed 3000+ data set.
-# df_imputed=pd.read_csv(f2)
-# df_imputed['title'].fillna("", inplace=True)
-# whole=vec.transform(df_imputed['title'])
-# imputed_rooms = df_imputed.get_dummies(df_imputed['rooms'])
-# df_imputed = pd.concat([df_imputed, imputed_rooms], axis=1)
-# df_imputed["Predicted"] = clf.predict(sp.hstack([whole, df_imputed[[0.0, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 'price']].values]))
-# df_imputed.to_csv("C:/Users/jocel/PycharmProjects/scraper/results/Standardized_Deduped_Datasets/Predicted_Aggregated_Clean_20180815_clipped_no_loc.csv")
-
-#Code for OOB error plot
-# arr=[]
-# for i in range (1,2000):
-#     clf = RandomForestClassifier(n_jobs=2, n_estimators=i, random_state=1234, oob_score=True)
-#     clf.fit(features, train['Category_3'])
-#     arr.append(1-clf.oob_score_)
-#     print(i)
-#
-#
-# x_coordinate = [i for i in range(len(arr))]
-# plt.plot(x_coordinate, arr)
-# plt.show()
-
-# #Code for top influential features
-# importances = clf.feature_importances_
-# std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-#              axis=0)
-# indices = np.argsort(importances)[::-1]
-# print(importances.shape)
-# print("Feature ranking:")
-#
-# for f in range(features.shape[1]):
-#     print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
-
-# # Code for plotting OOB and % accuracy
-# x_coordinate = [i/20 for i in range(1, 20)]
-# plt.plot(x_coordinate, arr, label="% Prediction accuracy")
-# plt.plot(x_coordinate, arr2, label= "% OOB error")
-# plt.title("Prediction accuracy and OOB error with varying max_df values")
-# plt.xlabel("max_df")
-# plt.show()
+plotVaryingEstimators(50, test, features, train['Category_3'], test_features, test['Category_3'])
