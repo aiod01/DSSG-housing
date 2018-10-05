@@ -28,25 +28,47 @@ def threeCategory(df):
     df['Category_3'] = df['Category'].dropna().apply(lambda x: "1" if x < 3.0 else ("2" if x < 4.0 else "3"))
     df['Category_text'] = df['Category'].apply(lambda x: str(x))
 
-# Fit the model and print the accuracy scores
-def getResults(model_name, clf, test, train_x, train_y, test_x, test_y, proba=False):
+# Fit the model and get predictions
+def getPredictions(clf, test, train_x, train_y, test_x):
     clf.fit(train_x, train_y)
     predict2 = clf.predict(test_x)
     test['predict2'] = predict2
-    if proba:
-        getClassificationProbability(model_name, clf, test, test_x)
-    print(model_name)
-    print("Prediction accuracy: %0.2f" % clf.score(test_x, test_y))
-    print("OOB score: %0.2f" % clf.oob_score_)
-    return test
+    return clf
 
-# Gets the probability of the classification categories, output csv
-def getClassificationProbability(model_name, clf, test, test_x):
+def getAccuracy (clf, test_x, test_y):
+    accuracy = clf.score(test_x, test_y)
+    return accuracy, clf.oob_score_
+
+def printAccuracy (model_name, accuracy, oob):
+    print(model_name)
+    print("Prediction accuracy: %0.2f" % accuracy)
+    print("OOB score: %0.2f" % oob)
+
+# Gets the probability of the classification categories
+def getClassificationProbability(clf, test, test_x):
     proba = pd.DataFrame(clf.predict_proba(test_x))
     proba = proba.add_prefix('proba_')
     test2 = test.reset_index()
-    outfile = pd.concat([test2, proba], axis=1)
-    outfile.to_csv(os.path.join(config.ROOT_DIR, "Categorization ML Data", "Outputs", f"{model_name}.csv"), index=False)
+    out_df = pd.concat([test2, proba], axis=1)
+    return out_df
+
+def getRFClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True):
+    return RandomForestClassifier(n_jobs=n_jobs, n_estimators=n_estimators, random_state=random_state, oob_score=oob_score)
+
+# Plots the prediction accuracy and OOB scores for the range of estimators from 1 to n_estimators
+def plotAccuracyOOBScores (n_estimators, test, train_x, train_y, test_x, test_y):
+    arr = []
+    arr2 = []
+    for i in range(1, n_estimators):
+        clf = getRFClassifier(n_estimators=i)
+        clf = getPredictions(clf, test, train_x, train_y, test_x)
+        pred, oob = getAccuracy(clf, test_x, test_y)
+        arr.append(pred)
+        arr2.append(oob)
+    x_coordinate = [i for i in range(len(arr))]
+    plt.plot(x_coordinate, arr)
+    plt.plot(x_coordinate, arr2)
+    plt.show()
 
 # -------------------------- Script to run and print the classifiers ------------------------------
 
@@ -56,9 +78,6 @@ def getClassificationProbability(model_name, clf, test, test_x):
 f = os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets', "Imputated_data_sqft_price_rooms.csv")
 f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
                  'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
-
-arr = []
-arr2= []
 
 df = pd.read_csv(f)
 colNames = ['lat', 'long', 'price', 'sqft', 'rooms' ]
@@ -99,29 +118,31 @@ print("Logistic Regression")
 print("Accuracy: %0.2f (+/- %0.2f)" % (c_val_score.mean(), c_val_score.std() * 2))
 print("Prediction: %0.2f" % scores)
 
-# Random Forest Classifier from sklearn
-clf = RandomForestClassifier(n_jobs=2, n_estimators=1000, random_state=1234, oob_score=True)
+# Random Forest Classifier from sklearn, with default settings
+clf = getRFClassifier()
 
 #Random forest, TFIDF titles, 10 classes
-getResults("rf-titles-10categories", clf, test, train_x, train['Category_text'], test_x, test['Category_text'])
+clf = getPredictions(clf, test, train_x, train['Category_text'], test_x)
+acc, oob = getAccuracy(clf, test_x, test['Category_text'])
+printAccuracy("rf-titles-10categories", acc, oob)
 
 #Random forest, TFIDF titles, 3 classes
-getResults("rf-titles-3categories", clf, test, train_x, train['Category_3'], test_x, test['Category_3'])
+clf = getPredictions(clf, test,  train_x, train['Category_3'], test_x)
+acc, oob = getAccuracy(clf, test_x, test['Category_3'])
+printAccuracy("rf-titles-3categories", acc, oob)
 
 #Random forest, TFIDF titles + rooms, price, 10 classes
-getResults("rf-titles-rms-price-10categories", clf, test, features, train['Category_text'],
-           test_features, test['Category_text'])
+clf = getPredictions(clf, test, features, train['Category_text'], test_features)
+acc, oob = getAccuracy(clf, test_features, test['Category_text'])
+printAccuracy("rf-titles-rms-price-10categories", acc, oob)
 
 #Random forest, TFIDF titles + rooms, price, 3 classes
-getResults("rf-titles-rms-price-3categories", clf, test, features, train['Category_3'],
-           test_features, test['Category_3'])
+clf = getPredictions(clf, test, features, train['Category_3'], test_features)
+acc, oob = getAccuracy(clf, test_features, test['Category_3'])
+printAccuracy("rf-titles-rms-price-3categories", acc, oob)
 
-# To output the predictions on the test set, either set proba=True or:
-# res = getResults....
-# res.to_csv(filepath)
 
-#arr.append(clf.score(test_features, test['Category_3']))
-#arr2.append(1-clf.oob_score_)
+plotAccuracyOOBScores(50, test, features, train['Category_3'], test_features, test['Category_3'])
 
 #Code for doing a prediction on the imputed 3000+ data set.
 # df_imputed=pd.read_csv(f2)
