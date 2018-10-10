@@ -7,7 +7,7 @@ from sklearn.pipeline import Pipeline
 import pandas as pd
 import numpy as np
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
+
 import os
 import config
 
@@ -115,9 +115,9 @@ def getTfidfVec(train, test, max_df=0.7):
 # define input file path here:
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_withoutstar_labelledJA.csv"
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_labelledJA.csv"
-f = os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets', "Imputated_data_sqft_price_rooms.csv")
-f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
-                 'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
+f = "/zfs/users/asda11/asda11/DSSG-2018_Housing/Models/Random Forest/Imputated_data_sqft_price_rooms.csv"
+#f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
+#                 'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
 
 df = pd.read_csv(f)
 colNames = ['lat', 'long', 'price', 'sqft', 'rooms' ]
@@ -213,6 +213,6 @@ random_search = RandomizedSearchCV(estimator=pipeline, param_distributions=rando
 
 random_search.fit(train['title'], train['Category_3'])
 with open ('params_out.txt', 'w') as f:
-    print("Best parameters set: " + random_search.best_estimator_.steps)
+    write("Best parameters set: " + random_search.best_estimator_)
 f.close()
 # print("Best parameters set: " + random_search.best_estimator_)
