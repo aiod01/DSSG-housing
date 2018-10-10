@@ -1,9 +1,9 @@
 from sklearn.feature_extraction import text
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score, train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 import sklearn.metrics as metrics
+from sklearn.pipeline import Pipeline
 import pandas as pd
 import numpy as np
 import scipy.sparse as sp
@@ -109,7 +109,8 @@ def getTfidfVec(train, test, max_df=0.7):
 #     plt.xlabel("max_df")
 #     plt.show()
 
-# -------------------------- Script to run and print the classifiers ------------------------------
+
+# -------------------------- Script to run the classifiers and print the results ------------------------------
 
 # define input file path here:
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_withoutstar_labelledJA.csv"
@@ -134,48 +135,84 @@ df = pd.concat([df, rooms], axis=1)
 
 # create a stratified train-test split
 train, test = train_test_split(df, test_size=0.2, stratify=df['Category_3'])
+X_train, X_test, y_train, y_test = train_test_split(df, df['Category_3'], test_size=0.2, stratify=df['Category_3'])
 
 # tfidf vectorizer for title
 train_x, test_x = getTfidfVec(train['title'], test['title'])
 
 # join the tf-idf matrix with other features
 df2 = train[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2.0', 'rms_3.0', 'rms_4.0',
-             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price', 'sqft']]
+             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price']]
 features = sp.hstack([train_x, df2.values])
 test_features = sp.hstack([test_x, test[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2.0', 'rms_3.0', 'rms_4.0',
-             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price', 'sqft']].values])
+             'rms_5.0', 'rms_6.0', 'rms_7.0', 'rms_7.1', 'price']].values])
 
-#Logistic regression with TFIDF on titles, 10 classes
-model = LogisticRegression()
-model.fit(train_x, train["Category_text"])
-test['predict'] = model.predict(test_x)
-scores = metrics.accuracy_score(test['Category_text'],test['predict'])
-c_val_score = cross_val_score(model, train_x, train['Category_text'], cv=10)
-print("Logistic Regression")
-print("Accuracy: %0.2f (+/- %0.2f)" % (c_val_score.mean(), c_val_score.std() * 2))
-print("Prediction: %0.2f" % scores)
+# #Logistic regression with TFIDF on titles, 10 classes
+# model = LogisticRegression()
+# model.fit(train_x, train["Category_text"])
+# test['predict'] = model.predict(test_x)
+# scores = metrics.accuracy_score(test['Category_text'],test['predict'])
+# c_val_score = cross_val_score(model, train_x, train['Category_text'], cv=10)
+# print("Logistic Regression")
+# print("Accuracy: %0.2f (+/- %0.2f)" % (c_val_score.mean(), c_val_score.std() * 2))
+# print("Prediction: %0.2f" % scores)
 
 # Random Forest Classifier from sklearn, with default settings
 clf = getRFClassifier()
 
-#Random forest, TFIDF titles, 10 classes
-clf = getPredictions(clf, test, train_x, train['Category_text'], test_x)
-acc, oob = getAccuracy(clf, test_x, test['Category_text'])
-printAccuracy("rf-titles-10categories", acc, oob)
-
-#Random forest, TFIDF titles, 3 classes
-clf = getPredictions(clf, test,  train_x, train['Category_3'], test_x)
-acc, oob = getAccuracy(clf, test_x, test['Category_3'])
-printAccuracy("rf-titles-3categories", acc, oob)
-
-#Random forest, TFIDF titles + rooms, price, 10 classes
-clf = getPredictions(clf, test, features, train['Category_text'], test_features)
-acc, oob = getAccuracy(clf, test_features, test['Category_text'])
-printAccuracy("rf-titles-rms-price-10categories", acc, oob)
-
+# #Random forest, TFIDF titles, 10 classes
+# clf = getPredictions(clf, test, train_x, train['Category_text'], test_x)
+# acc, oob = getAccuracy(clf, test_x, test['Category_text'])
+# printAccuracy("rf-titles-10categories", acc, oob)
+#
+# #Random forest, TFIDF titles, 3 classes
+# clf = getPredictions(clf, test,  train_x, train['Category_3'], test_x)
+# acc, oob = getAccuracy(clf, test_x, test['Category_3'])
+# printAccuracy("rf-titles-3categories", acc, oob)
+#
+# #Random forest, TFIDF titles + rooms, price, 10 classes
+# clf = getPredictions(clf, test, features, train['Category_text'], test_features)
+# acc, oob = getAccuracy(clf, test_features, test['Category_text'])
+# printAccuracy("rf-titles-rms-price-10categories", acc, oob)
+#
 #Random forest, TFIDF titles + rooms, price, 3 classes
 clf = getPredictions(clf, test, features, train['Category_3'], test_features)
 acc, oob = getAccuracy(clf, test_features, test['Category_3'])
 printAccuracy("rf-titles-rms-price-3categories", acc, oob)
 
 #plotVaryingEstimators(50, test, features, train['Category_3'], test_features, test['Category_3'])
+
+
+
+# -------------------------- Hyperparameter Tuning ------------------------------------------------------------
+pipeline = Pipeline([
+    ('tfidf', text.TfidfVectorizer()),
+    ('clf', RandomForestClassifier())
+])
+max_df = [float(x) for x in np.linspace(0.2, 1.0, 10)]
+n_est = [int(x) for x in np.linspace(start=10, stop = 2000, num=10)]
+max_features=['auto', 'sqrt', 'log2', None]
+max_depth = [int(x) for x in np.linspace(5,100, num=5)]
+max_depth.append(None)
+min_sample_split = [2,5,10]
+min_sample_leaf = [1, 2, 4]
+bootstrap = [True, False]
+random_grid = {
+    'tfidf__max_df': max_df,
+    'tfidf__min_df': [0.0],
+    'tfidf__ngram_range': [(1, 1), (1, 2), (1, 3)],
+    'clf__n_estimators': n_est,
+    'clf__max_features': max_features,
+    'clf__max_depth': max_depth,
+    'clf__min_samples_split': min_sample_split,
+    'clf__min_samples_leaf': min_sample_leaf,
+    'clf__bootstrap': bootstrap
+}
+
+random_search = RandomizedSearchCV(estimator=pipeline, param_distributions=random_grid, cv=5, n_iter=100)
+
+random_search.fit(train['title'], train['Category_3'])
+with open ('params_out.txt', 'w') as f:
+    print("Best parameters set: " + random_search.best_estimator_.steps)
+f.close()
+# print("Best parameters set: " + random_search.best_estimator_)
