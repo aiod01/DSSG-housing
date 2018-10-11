@@ -212,7 +212,7 @@ random_grid = {
 random_search = RandomizedSearchCV(estimator=pipeline, param_distributions=random_grid, cv=5, n_iter=100)
 
 random_search.fit(train['title'], train['Category_3'])
-with open ('params_out.txt', 'w') as f:
-    write("Best parameters set: " + random_search.best_estimator_)
-f.close()
+file = open ('params_out.txt', 'w') 
+file.write("Best parameters set: " + random_search.best_estimator_)
+file.close()
 # print("Best parameters set: " + random_search.best_estimator_)
