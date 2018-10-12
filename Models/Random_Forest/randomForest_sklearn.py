@@ -1,4 +1,4 @@
-from sklearn.feature_extraction import text
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import cross_val_score, train_test_split, RandomizedSearchCV, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -7,9 +7,10 @@ from sklearn.pipeline import Pipeline
 import pandas as pd
 import numpy as np
 import scipy.sparse as sp
-
+import matplotlib.pyplot as plt
 import os
 import config
+import json
 
 # -------------------------- Helper Functions ------------------------------
 # Missing value imputation
@@ -85,7 +86,7 @@ def printInfluentialFeatures(clf):
 
 # Get tfidfVectorizer and do transformations
 def getTfidfVec(train, test, max_df=0.7):
-    vec = text.TfidfVectorizer(max_df= max_df)
+    vec = TfidfVectorizer(max_df= max_df)
     train_x = vec.fit_transform(train)
     test_x = vec.transform(test)
     return train_x, test_x
@@ -115,9 +116,9 @@ def getTfidfVec(train, test, max_df=0.7):
 # define input file path here:
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_withoutstar_labelledJA.csv"
 # f = "../results/Standardized_Deduped_Datasets/1000samples_20180815_labelledJA.csv"
-f = "/zfs/users/asda11/asda11/DSSG-2018_Housing/Models/Random Forest/Imputated_data_sqft_price_rooms.csv"
-#f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
-#                 'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
+f = os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets', "Imputated_data_sqft_price_rooms.csv")
+f2= os.path.join(config.ROOT_DIR, 'results', 'Standardized_Deduped_Datasets',
+                 'Imputated_data_Aggregated_Clean_20180815_clipped_no_loc.csv')
 
 df = pd.read_csv(f)
 colNames = ['lat', 'long', 'price', 'sqft', 'rooms' ]
@@ -135,7 +136,6 @@ df = pd.concat([df, rooms], axis=1)
 
 # create a stratified train-test split
 train, test = train_test_split(df, test_size=0.2, stratify=df['Category_3'])
-X_train, X_test, y_train, y_test = train_test_split(df, df['Category_3'], test_size=0.2, stratify=df['Category_3'])
 
 # tfidf vectorizer for title
 train_x, test_x = getTfidfVec(train['title'], test['title'])
@@ -157,7 +157,7 @@ test_features = sp.hstack([test_x, test[['rms_0.0', 'rms_0.1', 'rms_1.0', 'rms_2
 # print("Accuracy: %0.2f (+/- %0.2f)" % (c_val_score.mean(), c_val_score.std() * 2))
 # print("Prediction: %0.2f" % scores)
 
-# Random Forest Classifier from sklearn, with default settings
+# Random_Forest Classifier from sklearn, with default settings
 clf = getRFClassifier()
 
 # #Random forest, TFIDF titles, 10 classes
@@ -183,36 +183,3 @@ printAccuracy("rf-titles-rms-price-3categories", acc, oob)
 #plotVaryingEstimators(50, test, features, train['Category_3'], test_features, test['Category_3'])
 
 
-
-# -------------------------- Hyperparameter Tuning ------------------------------------------------------------
-pipeline = Pipeline([
-    ('tfidf', text.TfidfVectorizer()),
-    ('clf', RandomForestClassifier())
-])
-max_df = [float(x) for x in np.linspace(0.2, 1.0, 10)]
-n_est = [int(x) for x in np.linspace(start=10, stop = 2000, num=10)]
-max_features=['auto', 'sqrt', 'log2', None]
-max_depth = [int(x) for x in np.linspace(5,100, num=5)]
-max_depth.append(None)
-min_sample_split = [2,5,10]
-min_sample_leaf = [1, 2, 4]
-bootstrap = [True, False]
-random_grid = {
-    'tfidf__max_df': max_df,
-    'tfidf__min_df': [0.0],
-    'tfidf__ngram_range': [(1, 1), (1, 2), (1, 3)],
-    'clf__n_estimators': n_est,
-    'clf__max_features': max_features,
-    'clf__max_depth': max_depth,
-    'clf__min_samples_split': min_sample_split,
-    'clf__min_samples_leaf': min_sample_leaf,
-    'clf__bootstrap': bootstrap
-}
-
-random_search = RandomizedSearchCV(estimator=pipeline, param_distributions=random_grid, cv=5, n_iter=100)
-
-random_search.fit(train['title'], train['Category_3'])
-file = open ('params_out.txt', 'w') 
-file.write("Best parameters set: " + random_search.best_estimator_)
-file.close()
-# print("Best parameters set: " + random_search.best_estimator_)
