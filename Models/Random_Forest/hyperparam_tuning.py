@@ -124,13 +124,13 @@ gridsearch = {
     'clf__min_samples_leaf': min_sample_leaf,
     'clf__bootstrap': bootstrap
 }
-grid_search = GridSearchCV(estimator=pipeline, param_distributions=gridsearch, cv=5, n_iter=500)
+grid_search = GridSearchCV(estimator=pipeline, param_grid=gridsearch, cv=5)
 
 grid_search.fit(X_train, y_train)
 with open ('params_out.txt', 'a') as f:
     f.write("Random search results:")
     f.write(json.dumps(grid_search.best_params_))
-    f.write(grid_search.best_score_)
+    f.write(str(grid_search.best_score_))
 f.close()
 #print(random_search.best_estimator_)
 # print(random_search.best_params_)
