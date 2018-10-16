@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse as sp
 
 class TfidfVectorizerPlus(TfidfVectorizer):
-    def __init__(self, fit_col=None, col_name=None, max_df=1.0, min_df=1, ngram_range=(1, 1)):
+    def __init__(self, fit_col=None, col_name=None, max_df=1.0, min_df=1):
         TfidfVectorizer.__init__(self)
         self.fit_col = fit_col
         self.col_name = col_name
