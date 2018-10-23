@@ -5,7 +5,7 @@ library("tidyverse")
 ##Load data set
 s<-getwd()
 #For the pipeline
-#datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/July_Clean_20180718_withNonSurrey.csv",sep = "")
+#datapath<-paste(s,"/Desktop/DSSG/gitscripper/DSSG-2018_Housing/results/Standardized_Deduped_Datasets/1000samples_20181014.csv",sep = "")
 #For Aug, Sep data set.
 datapath<-paste(s,"/Desktop/Aug_Sep_clean20181010.csv",sep = "")
 
@@ -35,11 +35,11 @@ a.regional.data <- function(name){
   index_surrey_location <- index_surrey_description <- index_surrey_title<-  c()
   # for each variable (location, title, description), save the index into the empty vector for each.
   for (i in 1:nrow(result)) {
-    if(surrey_location_list[[i]][1]!=-1)
+    if(surrey_location_list[[i]][1]!=-1 & !is.na(surrey_location_list[[i]][1]))
     {index_surrey_location <- c(index_surrey_location,i)}
-    if(surrey_title_list[[i]][1]!=-1)
+    if(surrey_title_list[[i]][1]!=-1 & !is.na(surrey_title_list[[i]][1]))
     {index_surrey_title <- c(index_surrey_title,i)}
-    if(surrey_description_list[[i]][1]!=-1)
+    if(surrey_description_list[[i]][1]!=-1& !is.na(surrey_description_list[[i]][1]))
     {index_surrey_description <- c(index_surrey_description,i)}
   }
   #into one bag of vector put all the indexes. 
@@ -101,7 +101,7 @@ classifier <- function(vector1,vector2)
 #Surrey
 surrey.region <- c("halley","uildford","leetwood","estminster", "ewton","loverdale","urrey","ity centre")
 
-non.surrey.region <- c("hite rock","ission","sawwassen","elta","urnaby","angley","oquitlam","DELTA","WHITE ROCK","BURNABY")
+non.surrey.region <- c("hite rock","hite Rock","ission","sawwassen","elta","urnaby","angley","oquitlam","DELTA","WHITE ROCK","BURNABY")
 # non.surrey.data<- subset.data(non.surrey.region)
 
 test <- classifier(surrey.region, non.surrey.region)
