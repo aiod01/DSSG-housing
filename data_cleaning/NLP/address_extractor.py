@@ -1,7 +1,7 @@
 import pandas as pd
 
-from data_cleaning.Common import nlp_utils as nutils
-from data_cleaning.Common import common_utils as common
+from Data_Cleaning.Common import nlp_utils as nutils
+from Data_Cleaning.Common import common_utils as common
 from postal.parser import parse_address
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,8 +58,8 @@ def check_distance(df, threshold):
     df = pd.concat([df, dist_df['distance']], axis=1, join="inner")
     print(df.head())
     #Visualization
-    # plt.hist(dist_df['distance'],bins=[0.,0.01, 0.02, 0.5, 1, 6], range=(0, 8))
-    # plt.show()
+    plt.hist(dist_df['distance'])
+    plt.show()
     return sum(dist_df['distance']>threshold), dist_df.count(axis=0), df
 
 #define filepaths here
@@ -78,7 +78,7 @@ df = nutils.remove_stopwords(df, 'description', 'clean_description')
 df = common.geocode_df(df)
 
 #print(check_address(df,mrkt_rentals))
-res1, res2, res3 = check_distance(df, 0.01)
+res1, res2, res3 = check_distance(df, 0.0001)
 print(str(res1))
 print(str(res2))
 
